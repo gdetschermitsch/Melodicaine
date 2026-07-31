@@ -12,6 +12,8 @@
     db: null,
     tracks: [],
     albums: [],
+    playlists: [],
+    selectedPlaylistId: 'loved',
     queue: [],
     queueIndex: -1,
     currentTrack: null,
@@ -23,6 +25,9 @@
     activeView: 'artists',
     shuffle: false,
     repeat: 'off',
+    playbackContext: { type: 'queue', id: null, name: 'Manual queue' },
+    trackPickerMode: null,
+    trackPickerSelected: new Set(),
     search: '',
     manageType: 'artist',
     manageSelected: new Set(),
@@ -43,19 +48,22 @@
   const els = {
     folderPicker: $('folderPicker'), filePicker: $('filePicker'), searchInput: $('searchInput'), statusText: $('statusText'),
     artistGrid: $('artistGrid'), artistEmpty: $('artistEmpty'), albumGrid: $('albumGrid'), albumEmpty: $('albumEmpty'), trackTableBody: $('trackTableBody'), trackEmpty: $('trackEmpty'),
-    queueList: $('queueList'), queueEmpty: $('queueEmpty'), artistCount: $('artistCount'), albumCount: $('albumCount'), trackCount: $('trackCount'), queueCount: $('queueCount'),
+    queueList: $('queueList'), queueEmpty: $('queueEmpty'), queueContextLabel: $('queueContextLabel'), addQueueButton: $('addQueueButton'), artistCount: $('artistCount'), albumCount: $('albumCount'), trackCount: $('trackCount'), playlistCount: $('playlistCount'), queueCount: $('queueCount'),
+    playlistList: $('playlistList'), playlistDetail: $('playlistDetail'), playlistEmpty: $('playlistEmpty'), newPlaylistButton: $('newPlaylistButton'),
     storageText: $('storageText'), clearLibraryButton: $('clearLibraryButton'), clearQueueButton: $('clearQueueButton'), playAllButton: $('playAllButton'),
     albumSort: $('albumSort'), albumDetail: $('albumDetail'), closeAlbumButton: $('closeAlbumButton'), detailCover: $('detailCover'),
     detailTitle: $('detailTitle'), detailArtist: $('detailArtist'), detailStats: $('detailStats'), albumTrackList: $('albumTrackList'),
     playAlbumButton: $('playAlbumButton'), queueAlbumButton: $('queueAlbumButton'), deleteAlbumButton: $('deleteAlbumButton'),
     nowTitle: $('nowTitle'), nowArtist: $('nowArtist'), playerCover: $('playerCover'), playPauseButton: $('playPauseButton'), previousButton: $('previousButton'),
-    nextButton: $('nextButton'), shuffleButton: $('shuffleButton'), repeatButton: $('repeatButton'), seekBar: $('seekBar'), currentTime: $('currentTime'),
+    nextButton: $('nextButton'), loveButton: $('loveButton'), shuffleButton: $('shuffleButton'), repeatButton: $('repeatButton'), seekBar: $('seekBar'), currentTime: $('currentTime'),
     durationTime: $('durationTime'), volumeBar: $('volumeBar'), volumeGraphic: $('volumeGraphic'), showLyricsButton: $('showLyricsButton'), toggleLyricsButton: $('toggleLyricsButton'),
     lyricsPanel: $('lyricsPanel'), lyricsTrackTitle: $('lyricsTrackTitle'), lyricsTrackArtist: $('lyricsTrackArtist'), lyricsCover: $('lyricsCover'), lyricsContent: $('lyricsContent'), toast: $('toast'),
     manageDock: $('manageDock'), manageDockToggle: $('manageDockToggle'), manageItemList: $('manageItemList'),
     manageSelectionCount: $('manageSelectionCount'), selectAllManageButton: $('selectAllManageButton'), deleteSelectedButton: $('deleteSelectedButton'),
     settingsButton: $('settingsButton'), settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), doneSettingsButton: $('doneSettingsButton'), resetSettingsButton: $('resetSettingsButton'), hueSlider: $('hueSlider'), brightnessSlider: $('brightnessSlider'), saturationSlider: $('saturationSlider'), zoomSlider: $('zoomSlider'), hueValue: $('hueValue'), brightnessValue: $('brightnessValue'), saturationValue: $('saturationValue'), zoomValue: $('zoomValue'),
-    showQueueButton: $('showQueueButton'), mobileMenuButton: $('mobileMenuButton'), drawerScrim: $('drawerScrim'), librarySidebar: $('librarySidebar'), closeDrawerButton: $('closeDrawerButton'), mobileManageButton: $('mobileManageButton'), installButton: $('installButton'), persistenceText: $('persistenceText'), requestPersistenceButton: $('requestPersistenceButton'), confirmDialog: $('confirmDialog'), confirmMessage: $('confirmMessage'), confirmYesButton: $('confirmYesButton'), confirmNoButton: $('confirmNoButton')
+    showQueueButton: $('showQueueButton'), mobileMenuButton: $('mobileMenuButton'), drawerScrim: $('drawerScrim'), librarySidebar: $('librarySidebar'), closeDrawerButton: $('closeDrawerButton'), mobileManageButton: $('mobileManageButton'), installButton: $('installButton'), persistenceText: $('persistenceText'), requestPersistenceButton: $('requestPersistenceButton'), confirmDialog: $('confirmDialog'), confirmMessage: $('confirmMessage'), confirmYesButton: $('confirmYesButton'), confirmNoButton: $('confirmNoButton'),
+    trackPickerDialog: $('trackPickerDialog'), trackPickerTitle: $('trackPickerTitle'), trackPickerSearch: $('trackPickerSearch'), trackPickerList: $('trackPickerList'), closeTrackPickerButton: $('closeTrackPickerButton'), cancelTrackPickerButton: $('cancelTrackPickerButton'), confirmTrackPickerButton: $('confirmTrackPickerButton'),
+    playlistNameDialog: $('playlistNameDialog'), playlistNameInput: $('playlistNameInput'), closePlaylistNameButton: $('closePlaylistNameButton'), cancelPlaylistNameButton: $('cancelPlaylistNameButton'), savePlaylistNameButton: $('savePlaylistNameButton'), installHelpText: $('installHelpText')
   };
 
   const mobileLayout = window.matchMedia('(max-width: 960px)');
@@ -127,6 +135,26 @@
     const tx = state.db.transaction(SETTINGS_STORE, 'readwrite');
     tx.objectStore(SETTINGS_STORE).put({ key, value });
   }
+
+
+  const LOVED_PLAYLIST_ID = 'loved';
+  const LOVED_PLAYLIST_NAME = 'LovedPlaylist';
+
+  function normalizePlaylists(value) {
+    const incoming = Array.isArray(value) ? value : [];
+    const seen = new Set();
+    const normalized = incoming.filter((playlist) => playlist && typeof playlist.id === 'string' && typeof playlist.name === 'string').map((playlist) => ({ id: playlist.id, name: playlist.name.trim().slice(0, 60) || 'Untitled playlist', trackIds: Array.from(new Set(Array.isArray(playlist.trackIds) ? playlist.trackIds.filter((id) => typeof id === 'string') : [])), createdAt: Number(playlist.createdAt) || Date.now() })).filter((playlist) => !seen.has(playlist.id) && seen.add(playlist.id));
+    const loved = normalized.find((playlist) => playlist.id === LOVED_PLAYLIST_ID);
+    if (loved) loved.name = LOVED_PLAYLIST_NAME;
+    else normalized.unshift({ id: LOVED_PLAYLIST_ID, name: LOVED_PLAYLIST_NAME, trackIds: [], createdAt: Date.now() });
+    return normalized;
+  }
+
+  function savePlaylists() { setSetting('playlists', state.playlists); }
+  function playlistTracks(playlist) { const map = new Map(state.tracks.map((track) => [track.id, track])); return (playlist?.trackIds || []).map((id) => map.get(id)).filter(Boolean); }
+  function selectedPlaylist() { return state.playlists.find((playlist) => playlist.id === state.selectedPlaylistId) || state.playlists[0]; }
+  function setPlaybackContext(type, id, name) { state.playbackContext = { type, id: id || null, name: name || (type === 'queue' ? 'Manual queue' : type) }; if (els.queueContextLabel) els.queueContextLabel.textContent = state.playbackContext.name; }
+  function uniquePlaylistName(name) { const base = (name || '').trim().slice(0, 60) || 'New playlist'; const names = new Set(state.playlists.map((p) => p.name.toLowerCase())); if (!names.has(base.toLowerCase())) return base; let n=2; while (names.has(`${base} ${n}`.toLowerCase())) n++; return `${base} ${n}`; }
 
   const DEFAULT_INTERFACE_SETTINGS = Object.freeze({ hue: 151, brightness: 70, saturation: 64, zoom: 100 });
 
@@ -408,6 +436,11 @@
   async function loadLibrary() {
     state.tracks = await getAllTracks();
     state.albums = buildAlbums(state.tracks);
+    state.playlists = normalizePlaylists(await getSetting('playlists', state.playlists));
+    const validIds = new Set(state.tracks.map((track) => track.id));
+    let playlistsChanged = false;
+    state.playlists.forEach((playlist) => { const cleaned = playlist.trackIds.filter((id) => validIds.has(id)); if (cleaned.length !== playlist.trackIds.length) { playlist.trackIds = cleaned; playlistsChanged = true; } });
+    if (playlistsChanged) savePlaylists();
     state.manageSelected.clear();
     renderAll();
     renderManageItems();
@@ -460,7 +493,7 @@
       container.appendChild(img);
     } else {
       const img = document.createElement('img');
-      img.src = 'assets/logo.png';
+      img.src = './assets/logo.png';
       img.alt = '';
       img.className = 'melodicaine-placeholder';
       img.setAttribute('aria-hidden', 'true');
@@ -606,9 +639,9 @@
       row.children[1].textContent = track.title;
       row.children[2].textContent = track.artist;
       row.children[3].textContent = track.album;
-      row.addEventListener('dblclick', () => playTrack(track, tracks));
+      row.addEventListener('dblclick', () => { setPlaybackContext('queue', null, 'All tracks'); playTrack(track, tracks, state.playbackContext); });
       row.addEventListener('click', (event) => {
-        if (!event.target.closest('button')) playTrack(track, tracks);
+        if (!event.target.closest('button')) { setPlaybackContext('queue', null, 'All tracks'); playTrack(track, tracks, state.playbackContext); }
       });
       row.querySelector('.queue-add').addEventListener('click', (event) => {
         event.stopPropagation();
@@ -619,26 +652,75 @@
     els.trackEmpty.style.display = tracks.length ? 'none' : 'grid';
   }
 
+  function moveQueueItem(from, to) {
+    if (from === to || from < 0 || to < 0 || from >= state.queue.length || to >= state.queue.length) return;
+    const [item] = state.queue.splice(from, 1); state.queue.splice(to, 0, item);
+    if (state.queueIndex === from) state.queueIndex = to;
+    else if (from < state.queueIndex && to >= state.queueIndex) state.queueIndex--;
+    else if (from > state.queueIndex && to <= state.queueIndex) state.queueIndex++;
+    renderQueue();
+  }
+
   function renderQueue() {
     els.queueList.innerHTML = '';
     state.queue.forEach((track, index) => {
       const item = document.createElement('div');
       item.className = `queue-item${index === state.queueIndex ? ' active' : ''}`;
-      item.innerHTML = `<span>${index + 1}</span><div><strong></strong><p></p></div><button class="icon-button" title="Remove">×</button>`;
+      item.draggable = true;
+      item.dataset.index = index;
+      item.innerHTML = `<span class="queue-drag" title="Drag to reorder" aria-hidden="true">☰</span><span class="queue-number">${index + 1}</span><div class="queue-track-copy"><strong></strong><p></p></div><div class="queue-item-actions"><button class="icon-button queue-up" title="Move up" aria-label="Move up">↑</button><button class="icon-button queue-down" title="Move down" aria-label="Move down">↓</button><button class="icon-button queue-add-more" title="Add songs to queue" aria-label="Add songs to queue">＋</button><button class="icon-button queue-remove" title="Remove" aria-label="Remove from queue">×</button></div>`;
       item.querySelector('strong').textContent = track.title;
       item.querySelector('p').textContent = `${track.artist} · ${track.album}`;
       item.addEventListener('click', (event) => { if (!event.target.closest('button')) playQueueIndex(index); });
-      item.querySelector('button').addEventListener('click', () => removeQueueIndex(index));
+      item.querySelector('.queue-up').addEventListener('click', () => moveQueueItem(index, index - 1));
+      item.querySelector('.queue-down').addEventListener('click', () => moveQueueItem(index, index + 1));
+      item.querySelector('.queue-add-more').addEventListener('click', () => openTrackPicker('queue'));
+      item.querySelector('.queue-remove').addEventListener('click', () => removeQueueIndex(index));
+      item.addEventListener('dragstart', (event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(index)); item.classList.add('dragging'); });
+      item.addEventListener('dragend', () => item.classList.remove('dragging'));
+      item.addEventListener('dragover', (event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; });
+      item.addEventListener('drop', (event) => { event.preventDefault(); moveQueueItem(Number(event.dataTransfer.getData('text/plain')), index); });
       els.queueList.appendChild(item);
     });
     els.queueEmpty.style.display = state.queue.length ? 'none' : 'grid';
     els.queueCount.textContent = state.queue.length;
+    if (els.queueContextLabel) els.queueContextLabel.textContent = state.playbackContext.name;
+  }
+
+  function renderPlaylists() {
+    els.playlistList.innerHTML = '';
+    state.playlists.forEach((playlist) => {
+      const button = document.createElement('button');
+      button.type = 'button'; button.className = `playlist-card${playlist.id === state.selectedPlaylistId ? ' active' : ''}`;
+      button.innerHTML = `<span class="playlist-heart">${playlist.id === LOVED_PLAYLIST_ID ? '♥' : '♫'}</span><span><strong></strong><small></small></span>`;
+      button.querySelector('strong').textContent = playlist.name;
+      button.querySelector('small').textContent = `${playlistTracks(playlist).length} song${playlistTracks(playlist).length === 1 ? '' : 's'}`;
+      button.addEventListener('click', () => { state.selectedPlaylistId = playlist.id; renderPlaylists(); });
+      els.playlistList.appendChild(button);
+    });
+    const playlist = selectedPlaylist();
+    if (!playlist) { els.playlistDetail.innerHTML = ''; els.playlistDetail.appendChild(els.playlistEmpty); return; }
+    const tracks = playlistTracks(playlist);
+    els.playlistDetail.innerHTML = '';
+    const header = document.createElement('div'); header.className = 'playlist-detail-header';
+    header.innerHTML = `<div><p class="eyebrow">Playlist</p><h3></h3><p>${tracks.length} song${tracks.length === 1 ? '' : 's'}</p></div><div class="playlist-actions"><button class="primary-button compact playlist-play">▶ Play</button><button class="secondary-button compact playlist-add">+ Add songs</button>${playlist.id === LOVED_PLAYLIST_ID ? '' : '<button class="danger-button compact playlist-delete">Delete</button>'}</div>`;
+    header.querySelector('h3').textContent = playlist.name;
+    header.querySelector('.playlist-play').disabled = !tracks.length;
+    header.querySelector('.playlist-play').addEventListener('click', () => { if (tracks.length) { setPlaybackContext('playlist', playlist.id, playlist.name); playTrack(tracks[0], tracks, state.playbackContext); } });
+    header.querySelector('.playlist-add').addEventListener('click', () => openTrackPicker('playlist', playlist.id));
+    header.querySelector('.playlist-delete')?.addEventListener('click', async () => { if (!(await askConfirmation(`Delete playlist “${playlist.name}”? The music files will remain in your library.`))) return; state.playlists = state.playlists.filter((p) => p.id !== playlist.id); state.selectedPlaylistId = LOVED_PLAYLIST_ID; savePlaylists(); renderPlaylists(); renderCounts(); });
+    els.playlistDetail.appendChild(header);
+    if (!tracks.length) { const empty = document.createElement('div'); empty.className='empty-state compact-empty'; empty.innerHTML='<h3>No songs yet</h3><p>Use “Add songs” or the love button while playing music.</p>'; els.playlistDetail.appendChild(empty); return; }
+    const list=document.createElement('div'); list.className='playlist-track-list';
+    tracks.forEach((track,index)=>{ const row=document.createElement('div'); row.className='playlist-track-row'; row.innerHTML=`<span>${index+1}</span><div><strong></strong><p></p></div><button class="icon-button" title="Remove from playlist">×</button>`; row.querySelector('strong').textContent=track.title; row.querySelector('p').textContent=`${track.artist} · ${track.album}`; row.addEventListener('click',(e)=>{ if(!e.target.closest('button')) { setPlaybackContext('playlist',playlist.id,playlist.name); playTrack(track,tracks,state.playbackContext); }}); row.querySelector('button').addEventListener('click',()=>{ playlist.trackIds=playlist.trackIds.filter((id)=>id!==track.id); savePlaylists(); renderPlaylists(); syncLoveButton(); }); list.appendChild(row); });
+    els.playlistDetail.appendChild(list);
   }
 
   function renderCounts() {
     els.artistCount.textContent = buildArtists().length;
     els.albumCount.textContent = state.albums.length;
     els.trackCount.textContent = state.tracks.length;
+    els.playlistCount.textContent = state.playlists.length;
     els.queueCount.textContent = state.queue.length;
   }
 
@@ -647,6 +729,7 @@
     renderAlbums();
     renderTracks();
     renderQueue();
+    renderPlaylists();
     renderCounts();
     if (state.selectedAlbumId) renderAlbumDetail();
   }
@@ -678,11 +761,42 @@
       row.innerHTML = `<span>${track.trackNumber || index + 1}</span><div><div class="track-title"></div><div class="track-subtitle"></div></div><span>${track.lyricsFile ? '<span class="lyric-badge">Lyrics</span>' : ''}</span><button class="icon-button" title="Add to queue">＋</button>`;
       row.querySelector('.track-title').textContent = track.title;
       row.querySelector('.track-subtitle').textContent = track.artist;
-      row.addEventListener('click', (event) => { if (!event.target.closest('button')) playTrack(track, album.tracks); });
+      row.addEventListener('click', (event) => { if (!event.target.closest('button')) { setPlaybackContext('album', album.id, album.title); playTrack(track, album.tracks, state.playbackContext); } });
       row.querySelector('button').addEventListener('click', (event) => { event.stopPropagation(); addToQueue([track]); });
       els.albumTrackList.appendChild(row);
     });
   }
+
+
+  function openTrackPicker(mode, playlistId = null) {
+    state.trackPickerMode = { mode, playlistId };
+    state.trackPickerSelected.clear();
+    els.trackPickerTitle.textContent = mode === 'playlist' ? `Add songs to ${state.playlists.find((p) => p.id === playlistId)?.name || 'playlist'}` : 'Add songs to queue';
+    els.trackPickerSearch.value = '';
+    renderTrackPicker();
+    els.trackPickerDialog.classList.remove('hidden');
+    setTimeout(() => els.trackPickerSearch.focus(), 0);
+  }
+  function closeTrackPicker() { els.trackPickerDialog.classList.add('hidden'); state.trackPickerMode = null; state.trackPickerSelected.clear(); }
+  function renderTrackPicker() {
+    const term = els.trackPickerSearch.value.trim().toLowerCase();
+    const tracks = state.tracks.filter((track) => !term || track.searchText.includes(term));
+    els.trackPickerList.innerHTML = '';
+    tracks.forEach((track) => { const label=document.createElement('label'); label.className='track-picker-item'; label.innerHTML='<input type="checkbox"><span><strong></strong><small></small></span>'; const input=label.querySelector('input'); input.checked=state.trackPickerSelected.has(track.id); label.querySelector('strong').textContent=track.title; label.querySelector('small').textContent=`${track.artist} · ${track.album}`; input.addEventListener('change',()=>{ input.checked ? state.trackPickerSelected.add(track.id) : state.trackPickerSelected.delete(track.id); }); els.trackPickerList.appendChild(label); });
+    if (!tracks.length) els.trackPickerList.innerHTML='<div class="empty-state compact-empty"><h3>No matching songs</h3></div>';
+  }
+  function confirmTrackPicker() {
+    const tracks = state.tracks.filter((track) => state.trackPickerSelected.has(track.id));
+    if (!tracks.length) { showToast('Select at least one song.'); return; }
+    if (state.trackPickerMode?.mode === 'playlist') { const playlist=state.playlists.find((p)=>p.id===state.trackPickerMode.playlistId); if (playlist) { playlist.trackIds=Array.from(new Set([...playlist.trackIds,...tracks.map((t)=>t.id)])); savePlaylists(); renderPlaylists(); showToast(`${tracks.length} song${tracks.length===1?'':'s'} added to ${playlist.name}.`); } }
+    else { setPlaybackContext('queue', null, 'Manual queue'); addToQueue(tracks); }
+    closeTrackPicker();
+  }
+  function openPlaylistNameDialog() { els.playlistNameInput.value=''; els.playlistNameDialog.classList.remove('hidden'); setTimeout(()=>els.playlistNameInput.focus(),0); }
+  function closePlaylistNameDialog() { els.playlistNameDialog.classList.add('hidden'); }
+  function createPlaylist() { const name=uniquePlaylistName(els.playlistNameInput.value); const playlist={id:`playlist-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,name,trackIds:[],createdAt:Date.now()}; state.playlists.push(playlist); state.selectedPlaylistId=playlist.id; savePlaylists(); closePlaylistNameDialog(); renderPlaylists(); renderCounts(); showView('playlists'); }
+  function syncLoveButton() { const loved=state.playlists.find((p)=>p.id===LOVED_PLAYLIST_ID); const active=Boolean(state.currentTrack && loved?.trackIds.includes(state.currentTrack.id)); els.loveButton.classList.toggle('active',active); els.loveButton.setAttribute('aria-pressed',String(active)); els.loveButton.textContent=active?'♥':'♡'; els.loveButton.title=active?'Remove current song from LovedPlaylist':'Add current song to LovedPlaylist'; }
+  function toggleLovedTrack() { if (!state.currentTrack) { showToast('Play a song first.'); return; } const loved=state.playlists.find((p)=>p.id===LOVED_PLAYLIST_ID); if (!loved) return; if (loved.trackIds.includes(state.currentTrack.id)) { loved.trackIds=loved.trackIds.filter((id)=>id!==state.currentTrack.id); showToast('Removed from LovedPlaylist.'); } else { loved.trackIds.push(state.currentTrack.id); showToast('Added to LovedPlaylist.'); } savePlaylists(); renderPlaylists(); syncLoveButton(); }
 
   function showView(view) {
     state.activeView = view;
@@ -693,6 +807,7 @@
   }
 
   function addToQueue(tracks, replace = false, startIndex = null) {
+    if (!replace && !state.queue.length) setPlaybackContext('queue', null, 'Manual queue');
     if (replace) {
       state.queue = [...tracks];
       state.queueIndex = startIndex ?? -1;
@@ -710,7 +825,8 @@
     renderQueue();
   }
 
-  async function playTrack(track, contextTracks = null) {
+  async function playTrack(track, contextTracks = null, context = null) {
+    if (context) setPlaybackContext(context.type, context.id, context.name);
     if (contextTracks) {
       state.queue = [...contextTracks];
       state.queueIndex = state.queue.findIndex((t) => t.id === track.id);
@@ -726,6 +842,7 @@
     audio.src = state.currentObjectUrl;
     audio.volume = Number(els.volumeBar.value);
     updateNowPlaying(track);
+    syncLoveButton();
     await loadLyrics(track);
     renderQueue();
     try { await audio.play(); } catch (error) { console.warn(error); }
@@ -969,28 +1086,29 @@
       event.preventDefault();
       state.deferredInstallPrompt = event;
       els.installButton?.classList.remove('hidden');
+      if (els.installHelpText) els.installHelpText.textContent = 'Melodicaine is ready to install as an app.';
     });
     window.addEventListener('appinstalled', () => {
       state.deferredInstallPrompt = null;
-      els.installButton?.classList.add('hidden');
+      if (els.installHelpText) els.installHelpText.textContent = 'Melodicaine is installed on this device.';
       showToast(`${APP_NAME} installed.`);
     });
   }
 
 
   const UI_GRAPHICS = Object.freeze({
-    play: 'assets/ui/play.png',
-    pause: 'assets/ui/pause.png',
-    previous: 'assets/ui/back.png',
-    next: 'assets/ui/forward.png',
-    shuffleOff: 'assets/ui/shuffleoff.png',
-    shuffleOn: 'assets/ui/shuffleon.png',
-    repeatOff: 'assets/ui/repeatoff.png',
-    repeatAll: 'assets/ui/repeaton.png',
-    repeatOne: 'assets/ui/repeat1.png',
-    volumeLow: 'assets/ui/volumelow.png',
-    volumeMedium: 'assets/ui/volumemedium.png',
-    volumeLoud: 'assets/ui/volumeloud.png'
+    play: './assets/ui/play.png',
+    pause: './assets/ui/pause.png',
+    previous: './assets/ui/back.png',
+    next: './assets/ui/forward.png',
+    shuffleOff: './assets/ui/shuffleoff.png',
+    shuffleOn: './assets/ui/shuffleon.png',
+    repeatOff: './assets/ui/repeatoff.png',
+    repeatAll: './assets/ui/repeaton.png',
+    repeatOne: './assets/ui/repeat1.png',
+    volumeLow: './assets/ui/volumelow.png',
+    volumeMedium: './assets/ui/volumemedium.png',
+    volumeLoud: './assets/ui/volumeloud.png'
   });
 
   function setButtonGraphic(button, source, title, ariaLabel, pressed = null) {
@@ -1043,7 +1161,13 @@
     els.mobileManageButton?.addEventListener('click', openMobileManage);
     document.querySelectorAll('[data-mobile-view]').forEach((button) => button.addEventListener('click', () => { showView(button.dataset.mobileView); setDrawer(false); }));
     els.requestPersistenceButton?.addEventListener('click', () => updatePersistenceStatus(true));
-    els.installButton?.addEventListener('click', async () => { if (!state.deferredInstallPrompt) return; state.deferredInstallPrompt.prompt(); await state.deferredInstallPrompt.userChoice; state.deferredInstallPrompt = null; els.installButton.classList.add('hidden'); });
+    els.installButton?.addEventListener('click', async () => {
+      if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) { showToast(`${APP_NAME} is already installed.`); return; }
+      if (state.deferredInstallPrompt) { state.deferredInstallPrompt.prompt(); await state.deferredInstallPrompt.userChoice; state.deferredInstallPrompt = null; return; }
+      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (ios) { els.installHelpText.textContent = 'On iPhone or iPad: tap Safari’s Share button, then choose “Add to Home Screen,” then Add.'; showToast('Use Share → Add to Home Screen.'); }
+      else { els.installHelpText.textContent = 'Open this site in Chrome or Edge, then use the browser menu and choose “Install app” or “Add to Home screen.”'; showToast('Use your browser menu to install Melodicaine.'); }
+    });
     els.settingsButton.addEventListener('click', openSettings);
     els.closeSettingsButton.addEventListener('click', closeSettings);
     els.doneSettingsButton.addEventListener('click', closeSettings);
@@ -1085,9 +1209,19 @@
       if (mobileLayout.matches) setDrawer(false);
     }));
     els.closeAlbumButton.addEventListener('click', closeAlbum);
-    els.playAllButton.addEventListener('click', () => { const tracks = filteredTracks(); if (tracks.length) playTrack(tracks[0], tracks); });
+    els.playAllButton.addEventListener('click', () => { const tracks = filteredTracks(); if (tracks.length) { setPlaybackContext('queue', null, 'All tracks'); playTrack(tracks[0], tracks, state.playbackContext); } });
     els.clearQueueButton.addEventListener('click', () => { state.queue = []; state.queueIndex = -1; renderQueue(); });
-    els.playAlbumButton.addEventListener('click', () => { const a = state.albums.find((x) => x.id === state.selectedAlbumId); if (a?.tracks.length) playTrack(a.tracks[0], a.tracks); });
+    els.addQueueButton.addEventListener('click', () => openTrackPicker('queue'));
+    els.newPlaylistButton.addEventListener('click', openPlaylistNameDialog);
+    els.trackPickerSearch.addEventListener('input', renderTrackPicker);
+    els.closeTrackPickerButton.addEventListener('click', closeTrackPicker);
+    els.cancelTrackPickerButton.addEventListener('click', closeTrackPicker);
+    els.confirmTrackPickerButton.addEventListener('click', confirmTrackPicker);
+    els.closePlaylistNameButton.addEventListener('click', closePlaylistNameDialog);
+    els.cancelPlaylistNameButton.addEventListener('click', closePlaylistNameDialog);
+    els.savePlaylistNameButton.addEventListener('click', createPlaylist);
+    els.playlistNameInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') createPlaylist(); });
+    els.playAlbumButton.addEventListener('click', () => { const a = state.albums.find((x) => x.id === state.selectedAlbumId); if (a?.tracks.length) { setPlaybackContext('album', a.id, a.title); playTrack(a.tracks[0], a.tracks, state.playbackContext); } });
     els.queueAlbumButton.addEventListener('click', () => { const a = state.albums.find((x) => x.id === state.selectedAlbumId); if (a) addToQueue(a.tracks); });
     els.deleteAlbumButton.addEventListener('click', async () => {
       const album = state.albums.find((x) => x.id === state.selectedAlbumId);
@@ -1109,11 +1243,12 @@
     });
 
     els.playPauseButton.addEventListener('click', () => {
-      if (!audio.src) { const first = filteredTracks()[0]; if (first) playTrack(first, filteredTracks()); return; }
+      if (!audio.src) { const tracks = filteredTracks(); const first = tracks[0]; if (first) { setPlaybackContext('queue', null, 'All tracks'); playTrack(first, tracks, state.playbackContext); } return; }
       audio.paused ? audio.play() : audio.pause();
     });
     els.nextButton.addEventListener('click', () => nextTrack(true));
     els.previousButton.addEventListener('click', previousTrack);
+    els.loveButton.addEventListener('click', toggleLovedTrack);
     els.shuffleButton.addEventListener('click', () => { state.shuffle = !state.shuffle; syncShuffleGraphic(); });
     els.repeatButton.addEventListener('click', () => {
       state.repeat = state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off';
@@ -1128,6 +1263,8 @@
     els.lyricsPanel.addEventListener('click', (event) => { if (event.target === els.lyricsPanel) toggleLyrics(false); });
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
+      if (!els.trackPickerDialog.classList.contains('hidden')) { closeTrackPicker(); return; }
+      if (!els.playlistNameDialog.classList.contains('hidden')) { closePlaylistNameDialog(); return; }
       if (!els.settingsDialog.classList.contains('hidden')) { closeSettings(); return; }
       toggleLyrics(false);
       if (!els.confirmDialog.classList.contains('hidden')) finishConfirmation(false);
