@@ -61,6 +61,3 @@ Then open `http://localhost:8080`.
 ## Interface customization
 
 Use the settings cog beside the Ready indicator to adjust the accent hue, saturation, brightness, and persistent interface zoom. Scrollbars use the selected accent color on a black track.
-
-## Playlists and queue
-Melodicaine includes persistent named playlists, a permanent LovedPlaylist, playlist-aware shuffle/repeat playback, a reorderable queue with touch-friendly move controls, and an in-app track picker. Installation is available from Interface Settings; iPhone and iPad users receive Safari Add to Home Screen instructions when a native install prompt is unavailable.
