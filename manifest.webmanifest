@@ -1,0 +1,16 @@
+{
+  "name": "Melodicaine",
+  "short_name": "Melodicaine",
+  "description": "A private personal music library with embedded artwork, queue management, and synchronized WebVTT lyrics.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c0e12",
+  "theme_color": "#111318",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
