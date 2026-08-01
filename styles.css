@@ -768,3 +768,58 @@ body { zoom: var(--interface-zoom); }
 @media (max-width: 960px) {
   .graphic-row-button { width: 2.75rem; height: 2.75rem; min-width: 2.75rem; min-height: 2.75rem; }
 }
+
+
+/* MelodicaineStudio / CRUXTAIN support controls */
+.topbar-link-button, .donation-button {
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.topbar-link-button:hover, .donation-button:hover { background: var(--panel-3); border-color: var(--accent); }
+.donation-button { color: var(--accent); }
+.sidebar-copyright { margin-top: auto; padding: 14px 4px 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.donation-dialog {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0,0,0,.76);
+  backdrop-filter: blur(12px);
+}
+.donation-card {
+  position: relative;
+  width: min(540px, 100%);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 30px;
+  box-shadow: 0 30px 90px rgba(0,0,0,.58);
+}
+.donation-card h3 { margin-top: 5px; font-size: 26px; }
+.donation-card p:not(.eyebrow) { margin-top: 14px; color: var(--muted); line-height: 1.65; }
+.donation-close { position: absolute; top: 16px; right: 16px; }
+.donation-actions { display: flex; justify-content: end; margin-top: 24px; }
+.donation-link-grid { display: grid; gap: 11px; margin-top: 24px; }
+.donation-link { text-align: center; text-decoration: none; }
+body.donation-open { overflow: hidden; }
+@media (max-width: 720px) {
+  .topbar-link-button { display: none; }
+  .donation-button { min-width: 42px; padding: 8px 9px; font-size: 0; }
+  .donation-button::before { content: '$'; font-size: 18px; }
+  .donation-card { padding: 26px 20px 22px; }
+}

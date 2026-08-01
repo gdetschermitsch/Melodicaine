@@ -4,15 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="theme-color" content="#111318" />
-  <meta name="description" content="Melodicaine is a private, installable music library with embedded album art and synchronized WebVTT lyrics." />
+  <meta name="description" content="MelodicaineStudio is a private, installable music library with embedded album art and synchronized WebVTT lyrics." />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Melodicaine" />
+  <meta name="apple-mobile-web-app-title" content="MelodicaineStudio" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
   <link rel="icon" href="./icons/melodicaine.ico" sizes="any" />
-  <title>Melodicaine</title>
+  <title>MelodicaineStudio</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -22,7 +22,7 @@
       <div class="brand">
         <img class="brand-logo melodicaine-artwork" src="./assets/logo.png" alt="" aria-hidden="true" />
         <div class="brand-copy">
-          <img class="brand-title melodicaine-artwork" src="./assets/title.png" alt="Melodicaine" />
+          <img class="brand-title melodicaine-artwork" src="./assets/title.png" alt="MelodicaineStudio" />
           <p>Your music stays on this device.</p>
         </div>
         <button id="closeDrawerButton" class="drawer-close-button" type="button" aria-label="Close library menu">×</button>
@@ -73,6 +73,7 @@
         <button class="nav-button" data-view="queue">Queue <span id="queueCount">0</span></button>
       </nav>
 
+      <div class="sidebar-copyright">© 2026 CRUXTAIN · MelodicaineStudio</div>
     </aside>
 
     <main class="main-content">
@@ -83,6 +84,8 @@
           <input id="searchInput" type="search" placeholder="Search songs, albums, artists, or folders" autocomplete="off" />
         </div>
         <div class="topbar-actions">
+          <a id="cruxtainWebsiteButton" class="topbar-link-button" href="https://gdetschermitsch.github.io/CRUXTAIN/index.html" target="_blank" rel="noopener noreferrer" aria-label="Visit the CRUXTAIN website" title="CRUXTAIN website">CRUXTAIN</a>
+          <button id="donationButton" class="donation-button" type="button" aria-label="Support CRUXTAIN projects" aria-haspopup="dialog" aria-controls="donationDialog" title="Donate to CRUXTAIN">Donate</button>
           <button id="settingsButton" class="settings-button graphic-button" type="button" aria-label="Open interface settings" aria-haspopup="dialog" aria-controls="settingsDialog" title="Settings"><img class="ui-control-graphic" src="./assets/ui/cog.png" alt="" aria-hidden="true" /></button>
           <div id="statusText" class="status-text">Ready</div>
         </div>
@@ -275,6 +278,30 @@
     <audio id="audioPlayer" preload="metadata" playsinline></audio>
   </footer>
 
+  <div id="donationDialog" class="donation-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="donationTitle" aria-describedby="donationDisclaimer">
+    <div class="donation-card">
+      <button id="closeDonationButton" class="settings-close-button donation-close" type="button" aria-label="Close donation window">×</button>
+      <div id="donationDisclaimerStep">
+        <p class="eyebrow">Support CRUXTAIN</p>
+        <h3 id="donationTitle">Donation disclaimer</h3>
+        <p id="donationDisclaimer">CRUXTAIN donations are used to support all CRUXTAIN projects, including the music studio, authorship, game development, web tools, products, and other projects. Donations are not tax deductible.</p>
+        <div class="donation-actions">
+          <button id="donationOkayButton" class="primary-button" type="button">Okay</button>
+        </div>
+      </div>
+      <div id="donationLinksStep" class="hidden">
+        <p class="eyebrow">Choose a service</p>
+        <h3>Donate to CRUXTAIN</h3>
+        <p>Your support helps fund CRUXTAIN projects and development.</p>
+        <div class="donation-link-grid">
+          <a class="primary-button donation-link" href="https://www.paypal.com/paypalme/CRUXTAIN" target="_blank" rel="noopener noreferrer">Donate with PayPal</a>
+          <a class="secondary-button donation-link" href="https://venmo.com/u/Gage-Detschermitsch" target="_blank" rel="noopener noreferrer">Donate with Venmo</a>
+          <a class="secondary-button donation-link" href="https://gdetschermitsch.github.io/CRUXTAIN/index.html" target="_blank" rel="noopener noreferrer">Visit CRUXTAIN</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="settingsDialog" class="settings-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <div class="settings-card">
       <div class="settings-heading">
@@ -290,20 +317,20 @@
         <div class="settings-install-copy">
           <div>
             <p class="eyebrow">Application</p>
-            <h4 id="installSectionTitle">Install Melodicaine</h4>
+            <h4 id="installSectionTitle">Install MelodicaineStudio</h4>
           </div>
           <span id="installStateBadge" class="install-state-badge">Checking…</span>
         </div>
         <p id="installHelpText" class="install-help-text">Checking installation support for this device…</p>
-        <button id="installButton" class="primary-button settings-install-button" type="button">Install Melodicaine</button>
+        <button id="installButton" class="primary-button settings-install-button" type="button">Install MelodicaineStudio</button>
         <div id="iosInstallSteps" class="install-steps hidden" tabindex="-1">
           <h5>Install on iPhone or iPad</h5>
           <ol>
-            <li>Open this exact Melodicaine page in <strong>Safari</strong>.</li>
+            <li>Open this exact MelodicaineStudio page in <strong>Safari</strong>.</li>
             <li>Tap Safari’s <strong>Share</strong> button (square with an upward arrow). On some layouts, tap the page menu first, then <strong>Share</strong>.</li>
             <li>Scroll the action sheet and choose <strong>Add to Home Screen</strong>.</li>
             <li>Turn on <strong>Open as Web App</strong> when that option is shown, then tap <strong>Add</strong>.</li>
-            <li>Close Safari, launch Melodicaine from its new Home Screen icon, and import music from inside that installed copy.</li>
+            <li>Close Safari, launch MelodicaineStudio from its new Home Screen icon, and import music from inside that installed copy.</li>
           </ol>
           <div class="ios-storage-warning">
             <strong>Important iPhone limitation</strong>
@@ -332,7 +359,7 @@
         <section class="settings-color-section" aria-labelledby="graphicsColorTitle">
           <div class="settings-section-heading">
             <span class="settings-section-number">2</span>
-            <div><h4 id="graphicsColorTitle">Graphics color</h4><p>Melodicaine artwork and interface control graphics.</p></div>
+            <div><h4 id="graphicsColorTitle">Graphics color</h4><p>MelodicaineStudio artwork and interface control graphics.</p></div>
           </div>
           <div class="settings-preview settings-graphics-preview" aria-hidden="true">
             <img class="settings-graphics-preview-icon melodicaine-artwork" src="./icons/icon-192.png" alt="" />

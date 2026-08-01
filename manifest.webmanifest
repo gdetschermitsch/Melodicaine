@@ -1,7 +1,7 @@
 {
-  "name": "Melodicaine",
-  "short_name": "Melodicaine",
-  "description": "A private personal music library with embedded artwork, queue management, and synchronized WebVTT lyrics.",
+  "name": "MelodicaineStudio",
+  "short_name": "MelodicaineStudio",
+  "description": "MelodicaineStudio, a private personal music library with embedded artwork, queue management, and synchronized WebVTT lyrics.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

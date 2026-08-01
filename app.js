@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const APP_NAME = 'Melodicaine';
+  const APP_NAME = 'MelodicaineStudio';
   // Retained to preserve existing imported libraries across the project rename.
   const DB_NAME = 'LocalAlbumLibraryDB';
   const DB_VERSION = 1;
@@ -31,6 +31,7 @@
     drawerReturnFocus: null,
     deferredInstallPrompt: null,
     settingsReturnFocus: null,
+    donationReturnFocus: null,
     playlists: [],
     selectedPlaylistId: null,
     playbackContext: { type: 'queue', id: null },
@@ -71,6 +72,7 @@
     lyricsPanel: $('lyricsPanel'), lyricsTrackTitle: $('lyricsTrackTitle'), lyricsTrackArtist: $('lyricsTrackArtist'), lyricsCover: $('lyricsCover'), lyricsContent: $('lyricsContent'), toast: $('toast'),
     manageDock: $('manageDock'), manageDockToggle: $('manageDockToggle'), manageItemList: $('manageItemList'),
     manageSelectionCount: $('manageSelectionCount'), selectAllManageButton: $('selectAllManageButton'), deleteSelectedButton: $('deleteSelectedButton'),
+    donationButton: $('donationButton'), donationDialog: $('donationDialog'), closeDonationButton: $('closeDonationButton'), donationOkayButton: $('donationOkayButton'), donationDisclaimerStep: $('donationDisclaimerStep'), donationLinksStep: $('donationLinksStep'), cruxtainWebsiteButton: $('cruxtainWebsiteButton'),
     settingsButton: $('settingsButton'), settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), doneSettingsButton: $('doneSettingsButton'), resetSettingsButton: $('resetSettingsButton'),
     accentHueSlider: $('accentHueSlider'), accentBrightnessSlider: $('accentBrightnessSlider'), accentSaturationSlider: $('accentSaturationSlider'), accentHueValue: $('accentHueValue'), accentBrightnessValue: $('accentBrightnessValue'), accentSaturationValue: $('accentSaturationValue'),
     graphicsHueSlider: $('graphicsHueSlider'), graphicsBrightnessSlider: $('graphicsBrightnessSlider'), graphicsSaturationSlider: $('graphicsSaturationSlider'), graphicsHueValue: $('graphicsHueValue'), graphicsBrightnessValue: $('graphicsBrightnessValue'), graphicsSaturationValue: $('graphicsSaturationValue'),
@@ -234,6 +236,30 @@
       text: readColorControls('text'),
       zoom: els.zoomSlider.value
     };
+  }
+
+  function openDonation() {
+    state.donationReturnFocus = document.activeElement;
+    els.donationDisclaimerStep.classList.remove('hidden');
+    els.donationLinksStep.classList.add('hidden');
+    els.donationDialog.classList.remove('hidden');
+    document.body.classList.add('donation-open');
+    requestAnimationFrame(() => focusElement(els.closeDonationButton));
+  }
+
+  function showDonationLinks() {
+    els.donationDisclaimerStep.classList.add('hidden');
+    els.donationLinksStep.classList.remove('hidden');
+    requestAnimationFrame(() => focusElement(els.donationLinksStep.querySelector('a')));
+  }
+
+  function closeDonation() {
+    if (els.donationDialog.classList.contains('hidden')) return;
+    els.donationDialog.classList.add('hidden');
+    document.body.classList.remove('donation-open');
+    const returnFocus = state.donationReturnFocus;
+    state.donationReturnFocus = null;
+    requestAnimationFrame(() => focusElement(returnFocus || els.donationButton));
   }
 
   function openSettings() {
@@ -666,7 +692,7 @@
       img.className = 'melodicaine-placeholder';
       img.setAttribute('aria-hidden', 'true');
       container.appendChild(img);
-      container.setAttribute('aria-label', fallback ? 'Melodicaine artwork placeholder' : 'Artwork placeholder');
+      container.setAttribute('aria-label', fallback ? 'MelodicaineStudio artwork placeholder' : 'Artwork placeholder');
     }
   }
 
@@ -1297,7 +1323,7 @@
     if (installed) {
       els.installStateBadge.textContent = 'Installed';
       els.installStateBadge.classList.add('installed');
-      els.installHelpText.textContent = 'Melodicaine is running as an installed app on this device.';
+      els.installHelpText.textContent = 'MelodicaineStudio is running as an installed app on this device.';
       els.installButton.textContent = 'Already installed';
       els.installButton.disabled = true;
       return;
@@ -1308,10 +1334,10 @@
     els.installButton.disabled = false;
 
     if (state.deferredInstallPrompt) {
-      els.installButton.textContent = 'Install Melodicaine';
+      els.installButton.textContent = 'Install MelodicaineStudio';
       els.installHelpText.textContent = isAndroid
-        ? 'Install Melodicaine to your Home Screen and launch it like a standalone Android app.'
-        : 'Install Melodicaine as a standalone desktop or mobile application.';
+        ? 'Install MelodicaineStudio to your Home Screen and launch it like a standalone Android app.'
+        : 'Install MelodicaineStudio as a standalone desktop or mobile application.';
       return;
     }
 
@@ -1327,7 +1353,7 @@
       return;
     }
 
-    els.installButton.textContent = 'Install Melodicaine';
+    els.installButton.textContent = 'Install MelodicaineStudio';
     els.installHelpText.textContent = 'Open this site in Chrome, Edge, or another install-capable browser to install it as an app.';
   }
 
@@ -1356,8 +1382,8 @@
     }
 
     els.installHelpText.textContent = isAndroid
-      ? 'In Chrome, open the ⋮ menu and choose “Install app” or “Add to Home screen.” Then launch Melodicaine from its icon.'
-      : 'Open the browser menu and choose “Install Melodicaine” or “Install app.” Chrome and Edge support this directly.';
+      ? 'In Chrome, open the ⋮ menu and choose “Install app” or “Add to Home screen.” Then launch MelodicaineStudio from its icon.'
+      : 'Open the browser menu and choose “Install MelodicaineStudio” or “Install app.” Chrome and Edge support this directly.';
   }
 
   function configureMobileImportCapabilities() {
@@ -1467,6 +1493,10 @@
     document.querySelectorAll('[data-mobile-view]').forEach((button) => button.addEventListener('click', () => { showView(button.dataset.mobileView); setDrawer(false); }));
     els.requestPersistenceButton?.addEventListener('click', () => updatePersistenceStatus(true));
     els.installButton?.addEventListener('click', handleInstallRequest);
+    els.donationButton.addEventListener('click', openDonation);
+    els.closeDonationButton.addEventListener('click', closeDonation);
+    els.donationOkayButton.addEventListener('click', showDonationLinks);
+    els.donationDialog.addEventListener('click', (event) => { if (event.target === els.donationDialog) closeDonation(); });
     els.settingsButton.addEventListener('click', openSettings);
     els.closeSettingsButton.addEventListener('click', closeSettings);
     els.doneSettingsButton.addEventListener('click', closeSettings);
@@ -1574,6 +1604,7 @@
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
       if (!els.addMenuDialog.classList.contains('hidden')) { closeAddMenu(); return; }
+      if (!els.donationDialog.classList.contains('hidden')) { closeDonation(); return; }
       if (!els.settingsDialog.classList.contains('hidden')) { closeSettings(); return; }
       toggleLyrics(false);
       if (!els.confirmDialog.classList.contains('hidden')) finishConfirmation(false);
