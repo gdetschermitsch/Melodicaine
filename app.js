@@ -44,43 +44,16 @@
     catch { element.focus(); }
   };
   const audio = $('audioPlayer');
-  let audioContext = null;
-  let audioSourceNode = null;
-  let audioGainNode = null;
 
   function requestedVolume() {
     return Math.max(0, Math.min(1, Number(els?.volumeBar?.value ?? 0.85)));
   }
 
-  async function ensureMobileVolumeControl() {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return false;
-    try {
-      if (!audioContext) {
-        audioContext = new AudioContextClass();
-        audioSourceNode = audioContext.createMediaElementSource(audio);
-        audioGainNode = audioContext.createGain();
-        audioSourceNode.connect(audioGainNode);
-        audioGainNode.connect(audioContext.destination);
-        audio.volume = 1;
-      }
-      if (audioContext.state === 'suspended') await audioContext.resume();
-      return true;
-    } catch (error) {
-      console.warn('Web Audio volume control unavailable; using media volume.', error);
-      return false;
-    }
-  }
-
-  async function applyVolume() {
-    const volume = requestedVolume();
-    const usingGain = await ensureMobileVolumeControl();
-    if (usingGain && audioGainNode) {
-      audio.volume = 1;
-      audioGainNode.gain.setValueAtTime(volume, audioContext.currentTime);
-    } else {
-      audio.volume = volume;
-    }
+  // Keep playback on the native HTMLMediaElement path. Routing the player through
+  // Web Audio causes several mobile browsers to suspend playback when Melodicaine
+  // is minimized or the screen locks, which also removes the notification controls.
+  function applyVolume() {
+    audio.volume = requestedVolume();
     syncVolumeGraphic();
   }
   const els = {
@@ -1055,7 +1028,7 @@
     if (state.currentObjectUrl) URL.revokeObjectURL(state.currentObjectUrl);
     state.currentObjectUrl = URL.createObjectURL(track.file);
     audio.src = state.currentObjectUrl;
-    await applyVolume();
+    applyVolume();
     updateNowPlaying(track);
     await loadLyrics(track);
     renderQueue();
@@ -1285,13 +1258,15 @@
         album: track.album || 'Unknown album',
         artwork: artworkUrlForMediaSession(track)
       });
+      try { navigator.mediaSession.setPositionState?.(); } catch {}
     } catch (error) { console.warn('Media Session metadata unavailable', error); }
   }
 
   function configureMediaSession() {
     if (!('mediaSession' in navigator)) return;
     const handlers = {
-      play: () => audio.play(), pause: () => audio.pause(), previoustrack: previousTrack, nexttrack: () => nextTrack(true),
+      play: () => { audio.play().catch((error) => console.warn('Background play failed', error)); },
+      pause: () => audio.pause(), previoustrack: previousTrack, nexttrack: () => nextTrack(true),
       seekbackward: (details) => { audio.currentTime = Math.max(0, audio.currentTime - (details.seekOffset || 10)); },
       seekforward: (details) => { audio.currentTime = Math.min(audio.duration || Infinity, audio.currentTime + (details.seekOffset || 10)); },
       seekto: (details) => { if (Number.isFinite(details.seekTime)) audio.currentTime = details.seekTime; }
@@ -1588,7 +1563,7 @@
     });
     els.seekBar.addEventListener('input', () => { if (audio.duration) audio.currentTime = (Number(els.seekBar.value) / 1000) * audio.duration; });
     els.volumeBar.addEventListener('input', async () => {
-      await applyVolume();
+      applyVolume();
       setSetting('volume', requestedVolume());
     });
     els.showQueueButton.addEventListener('click', () => { toggleLyrics(false); showView('queue'); });
