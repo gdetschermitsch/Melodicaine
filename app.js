@@ -33,7 +33,8 @@
     settingsReturnFocus: null,
     playlists: [],
     selectedPlaylistId: null,
-    playbackContext: { type: 'queue', id: null }
+    playbackContext: { type: 'queue', id: null },
+    playbackHistory: []
   };
 
   const $ = (id) => document.getElementById(id);
@@ -43,13 +44,52 @@
     catch { element.focus(); }
   };
   const audio = $('audioPlayer');
+  let audioContext = null;
+  let audioSourceNode = null;
+  let audioGainNode = null;
+
+  function requestedVolume() {
+    return Math.max(0, Math.min(1, Number(els?.volumeBar?.value ?? 0.85)));
+  }
+
+  async function ensureMobileVolumeControl() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return false;
+    try {
+      if (!audioContext) {
+        audioContext = new AudioContextClass();
+        audioSourceNode = audioContext.createMediaElementSource(audio);
+        audioGainNode = audioContext.createGain();
+        audioSourceNode.connect(audioGainNode);
+        audioGainNode.connect(audioContext.destination);
+        audio.volume = 1;
+      }
+      if (audioContext.state === 'suspended') await audioContext.resume();
+      return true;
+    } catch (error) {
+      console.warn('Web Audio volume control unavailable; using media volume.', error);
+      return false;
+    }
+  }
+
+  async function applyVolume() {
+    const volume = requestedVolume();
+    const usingGain = await ensureMobileVolumeControl();
+    if (usingGain && audioGainNode) {
+      audio.volume = 1;
+      audioGainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+    } else {
+      audio.volume = volume;
+    }
+    syncVolumeGraphic();
+  }
   const els = {
     folderPicker: $('folderPicker'), folderPickerLabel: $('folderPickerLabel'), filePicker: $('filePicker'), manageMobileHelp: $('manageMobileHelp'), searchInput: $('searchInput'), statusText: $('statusText'),
     artistGrid: $('artistGrid'), artistEmpty: $('artistEmpty'), albumGrid: $('albumGrid'), albumEmpty: $('albumEmpty'), trackTableBody: $('trackTableBody'), trackEmpty: $('trackEmpty'),
     queueList: $('queueList'), queueEmpty: $('queueEmpty'), artistCount: $('artistCount'), albumCount: $('albumCount'), trackCount: $('trackCount'), playlistCount: $('playlistCount'), queueCount: $('queueCount'),
     playlistGrid: $('playlistGrid'), playlistEmpty: $('playlistEmpty'), createPlaylistForm: $('createPlaylistForm'), playlistNameInput: $('playlistNameInput'), playlistDetail: $('playlistDetail'), closePlaylistButton: $('closePlaylistButton'), playlistDetailTitle: $('playlistDetailTitle'), playlistDetailStats: $('playlistDetailStats'), playlistTrackList: $('playlistTrackList'), playlistDetailEmpty: $('playlistDetailEmpty'), playPlaylistButton: $('playPlaylistButton'), queuePlaylistButton: $('queuePlaylistButton'), renamePlaylistButton: $('renamePlaylistButton'), deletePlaylistButton: $('deletePlaylistButton'),
     storageText: $('storageText'), clearLibraryButton: $('clearLibraryButton'), clearQueueButton: $('clearQueueButton'), playAllButton: $('playAllButton'),
-    albumSort: $('albumSort'), albumDetail: $('albumDetail'), closeAlbumButton: $('closeAlbumButton'), detailCover: $('detailCover'),
+    albumDetail: $('albumDetail'), closeAlbumButton: $('closeAlbumButton'), detailCover: $('detailCover'),
     detailTitle: $('detailTitle'), detailArtist: $('detailArtist'), detailStats: $('detailStats'), albumTrackList: $('albumTrackList'),
     playAlbumButton: $('playAlbumButton'), queueAlbumButton: $('queueAlbumButton'), deleteAlbumButton: $('deleteAlbumButton'),
     nowTitle: $('nowTitle'), nowArtist: $('nowArtist'), playerCover: $('playerCover'), playPauseButton: $('playPauseButton'), previousButton: $('previousButton'),
@@ -631,8 +671,7 @@
       if (!state.search) return true;
       return `${album.title} ${album.artist} ${album.folderPath}`.toLowerCase().includes(state.search) || album.tracks.some((t) => t.searchText.includes(state.search));
     });
-    const mode = els.albumSort.value;
-    albums.sort((a, b) => mode === 'recent' ? b.importedAt - a.importedAt : mode === 'artist' ? a.artist.localeCompare(b.artist) : a.title.localeCompare(b.title));
+    albums.sort((a, b) => a.title.localeCompare(b.title));
     return albums;
   }
 
@@ -716,6 +755,7 @@
 
   function removeDeletedFromPlayback(idSet) {
     state.queue = state.queue.filter((track) => !idSet.has(track.id));
+    state.playbackHistory = state.playbackHistory.filter((trackId) => !idSet.has(trackId));
     if (state.currentTrack && idSet.has(state.currentTrack.id)) {
       audio.pause(); audio.removeAttribute('src'); audio.load(); state.currentTrack = null; state.queueIndex = -1;
       els.nowTitle.textContent = 'Nothing playing'; els.nowArtist.textContent = 'Choose another track';
@@ -994,7 +1034,12 @@
     renderQueue();
   }
 
-  async function playTrack(track, contextTracks = null, context = null) {
+  async function playTrack(track, contextTracks = null, context = null, options = {}) {
+    const previousTrackId = state.currentTrack?.id ?? null;
+    if (!options.skipHistory && previousTrackId && previousTrackId !== track.id) {
+      state.playbackHistory.push(previousTrackId);
+      if (state.playbackHistory.length > 500) state.playbackHistory.shift();
+    }
     if (contextTracks) {
       state.queue = [...contextTracks];
       state.queueIndex = state.queue.findIndex((t) => t.id === track.id);
@@ -1010,7 +1055,7 @@
     if (state.currentObjectUrl) URL.revokeObjectURL(state.currentObjectUrl);
     state.currentObjectUrl = URL.createObjectURL(track.file);
     audio.src = state.currentObjectUrl;
-    audio.volume = Number(els.volumeBar.value);
+    await applyVolume();
     updateNowPlaying(track);
     await loadLyrics(track);
     renderQueue();
@@ -1018,10 +1063,10 @@
     try { await audio.play(); } catch (error) { console.warn(error); }
   }
 
-  function playQueueIndex(index) {
+  function playQueueIndex(index, options = {}) {
     if (!state.queue[index]) return;
     state.queueIndex = index;
-    playTrack(state.queue[index]);
+    playTrack(state.queue[index], null, null, options);
   }
 
   function updateNowPlaying(track) {
@@ -1120,10 +1165,16 @@
 
   function previousTrack() {
     if (audio.currentTime > 3) { audio.currentTime = 0; return; }
-    if (!state.queue.length) return;
-    let previous = state.queueIndex - 1;
-    if (previous < 0) previous = state.repeat === 'all' ? state.queue.length - 1 : 0;
-    playQueueIndex(previous);
+
+    while (state.playbackHistory.length) {
+      const previousTrackId = state.playbackHistory.pop();
+      const previousTrack = state.tracks.find((track) => track.id === previousTrackId);
+      if (!previousTrack || previousTrack.id === state.currentTrack?.id) continue;
+      playTrack(previousTrack, null, null, { skipHistory: true });
+      return;
+    }
+
+    if (state.currentTrack) audio.currentTime = 0;
   }
 
   function formatTime(seconds) {
@@ -1423,7 +1474,7 @@
 
   function syncVolumeGraphic() {
     if (!els.volumeGraphic) return;
-    const volume = Number(audio.volume);
+    const volume = requestedVolume();
     const source = volume <= 0.34 ? UI_GRAPHICS.volumeLow : volume <= 0.67 ? UI_GRAPHICS.volumeMedium : UI_GRAPHICS.volumeLoud;
     if (els.volumeGraphic.getAttribute('src') !== source) els.volumeGraphic.src = source;
     els.volumeGraphic.alt = volume === 0 ? 'Volume muted' : `Volume ${Math.round(volume * 100)} percent`;
@@ -1471,18 +1522,8 @@
     els.folderPicker.addEventListener('change', (e) => importFiles(e.target.files));
     els.filePicker.addEventListener('change', (e) => importFiles(e.target.files));
     els.searchInput.addEventListener('input', () => { state.search = els.searchInput.value.trim().toLowerCase(); renderArtists(); renderAlbums(); renderTracks(); renderPlaylists(); });
-    els.albumSort.addEventListener('change', () => {
-      if (els.albumSort.value === 'artist') {
-        renderArtists();
-        showView('artists');
-        return;
-      }
-      renderAlbums();
-      showView('albums');
-    });
     document.querySelectorAll('.nav-button').forEach((button) => button.addEventListener('click', () => {
       const view = button.dataset.view;
-      if (view === 'albums' && els.albumSort.value === 'artist') els.albumSort.value = 'title';
       showView(view);
       if (mobileLayout.matches) setDrawer(false);
     }));
@@ -1546,7 +1587,10 @@
       syncRepeatGraphic();
     });
     els.seekBar.addEventListener('input', () => { if (audio.duration) audio.currentTime = (Number(els.seekBar.value) / 1000) * audio.duration; });
-    els.volumeBar.addEventListener('input', () => { audio.volume = Number(els.volumeBar.value); syncVolumeGraphic(); setSetting('volume', audio.volume); });
+    els.volumeBar.addEventListener('input', async () => {
+      await applyVolume();
+      setSetting('volume', requestedVolume());
+    });
     els.showQueueButton.addEventListener('click', () => { toggleLyrics(false); showView('queue'); });
     els.showLyricsButton.addEventListener('click', () => toggleLyrics());
     els.playerCover.addEventListener('click', () => toggleLyrics(true));

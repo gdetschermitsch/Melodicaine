@@ -145,7 +145,14 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   .transport { grid-column: 1 / -1; grid-row: 1; }
   .now-playing { grid-column: 1; grid-row: 2; }
   .player-extras { grid-column: 2; grid-row: 2; }
-  .player-extras span, .player-extras input { display: none; }
+  .player-extras span { display: none; }
+  .player-extras input[type="range"] {
+    display: block;
+    width: clamp(72px, 18vw, 120px);
+    max-width: 120px;
+    min-height: 32px;
+    touch-action: pan-x;
+  }
   .lyrics-panel { width: min(100vw, 430px); bottom: 118px; }
 }
 @media (max-width: 560px) {
@@ -338,7 +345,8 @@ body.lyrics-open .main-content { margin-right: 0 !important; }
     padding-top: calc(20px + env(safe-area-inset-top)); padding-bottom: 8px; background: #101217;
   }
   .navigation { grid-template-columns: 1fr; }
-  .mobile-menu-button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); cursor: pointer; }
+  .mobile-menu-button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; padding: 5px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); cursor: pointer; overflow: hidden; }
+  .mobile-menu-icon { width: 100%; height: 100%; object-fit: contain; border-radius: 7px; }
   .main-content { height: 100vh; height: 100svh; height: 100dvh; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; padding: 0 14px calc(210px + env(safe-area-inset-bottom)); }
   .topbar { height: calc(70px + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top); gap: 9px; }
   .search-wrap { height: 42px; }
@@ -373,6 +381,8 @@ body.lyrics-open .main-content { margin-right: 0 !important; }
   .confirm-actions > button { min-width: 88px; min-height: 46px; }
   .album-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .player-extras button { min-height: 38px; }
+  .player-extras .volume-graphic { width: 30px; height: 30px; flex-basis: 30px; }
+  #volumeBar { min-width: 72px; }
 }
 @media (max-width: 480px) {
   .brand p { max-width: 210px; }
@@ -383,7 +393,8 @@ body.lyrics-open .main-content { margin-right: 0 !important; }
   .player-cover { width: 50px; height: 50px; flex-basis: 50px; }
   .transport-buttons { gap: 11px; }
   .progress-row { grid-template-columns: 34px 1fr 34px; gap: 5px; }
-  .player-extras { gap: 3px; }
+  .player-extras { gap: 5px; flex-wrap: wrap; justify-content: flex-end; max-width: 46vw; }
+  .player-extras input[type="range"] { width: min(112px, 38vw); }
   .player-extras button { font-size: 11px; padding: 5px 6px; }
 }
 
@@ -460,19 +471,27 @@ body { zoom: var(--interface-zoom); }
 .settings-heading h3 { font-size: 24px; }
 .settings-close-button { width: 44px; height: 44px; flex-basis: 44px; font-size: 26px; }
 .settings-preview {
-  margin: 22px 0;
   min-height: 54px;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--accent-dark);
-  color: var(--accent);
+  background: var(--panel-2);
   font-weight: 800;
 }
+.settings-accent-preview {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: var(--accent-dark);
+  color: var(--accent);
+}
 .settings-preview-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 70%, transparent); }
+.settings-graphics-preview { color: var(--muted); }
+.settings-graphics-preview-icon { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 10px; object-fit: contain; }
+.settings-text-preview { display: grid; align-content: center; gap: 3px; color: var(--text); }
+.settings-text-preview strong { color: var(--text); }
+.settings-text-preview span { color: var(--muted); font-size: 13px; font-weight: 600; }
 .settings-sections { display: grid; gap: 18px; }
 .settings-color-section { display: grid; gap: 18px; padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--panel) 72%, transparent); }
 .settings-section-heading { display: flex; align-items: flex-start; gap: 12px; }
