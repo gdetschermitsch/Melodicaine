@@ -30,7 +30,10 @@
     confirmReturnFocus: null,
     drawerReturnFocus: null,
     deferredInstallPrompt: null,
-    settingsReturnFocus: null
+    settingsReturnFocus: null,
+    playlists: [],
+    selectedPlaylistId: null,
+    playbackContext: { type: 'queue', id: null }
   };
 
   const $ = (id) => document.getElementById(id);
@@ -41,21 +44,23 @@
   };
   const audio = $('audioPlayer');
   const els = {
-    folderPicker: $('folderPicker'), filePicker: $('filePicker'), searchInput: $('searchInput'), statusText: $('statusText'),
+    folderPicker: $('folderPicker'), folderPickerLabel: $('folderPickerLabel'), filePicker: $('filePicker'), manageMobileHelp: $('manageMobileHelp'), searchInput: $('searchInput'), statusText: $('statusText'),
     artistGrid: $('artistGrid'), artistEmpty: $('artistEmpty'), albumGrid: $('albumGrid'), albumEmpty: $('albumEmpty'), trackTableBody: $('trackTableBody'), trackEmpty: $('trackEmpty'),
-    queueList: $('queueList'), queueEmpty: $('queueEmpty'), artistCount: $('artistCount'), albumCount: $('albumCount'), trackCount: $('trackCount'), queueCount: $('queueCount'),
+    queueList: $('queueList'), queueEmpty: $('queueEmpty'), artistCount: $('artistCount'), albumCount: $('albumCount'), trackCount: $('trackCount'), playlistCount: $('playlistCount'), queueCount: $('queueCount'),
+    playlistGrid: $('playlistGrid'), playlistEmpty: $('playlistEmpty'), createPlaylistForm: $('createPlaylistForm'), playlistNameInput: $('playlistNameInput'), playlistDetail: $('playlistDetail'), closePlaylistButton: $('closePlaylistButton'), playlistDetailTitle: $('playlistDetailTitle'), playlistDetailStats: $('playlistDetailStats'), playlistTrackList: $('playlistTrackList'), playlistDetailEmpty: $('playlistDetailEmpty'), playPlaylistButton: $('playPlaylistButton'), queuePlaylistButton: $('queuePlaylistButton'), renamePlaylistButton: $('renamePlaylistButton'), deletePlaylistButton: $('deletePlaylistButton'),
     storageText: $('storageText'), clearLibraryButton: $('clearLibraryButton'), clearQueueButton: $('clearQueueButton'), playAllButton: $('playAllButton'),
     albumSort: $('albumSort'), albumDetail: $('albumDetail'), closeAlbumButton: $('closeAlbumButton'), detailCover: $('detailCover'),
     detailTitle: $('detailTitle'), detailArtist: $('detailArtist'), detailStats: $('detailStats'), albumTrackList: $('albumTrackList'),
     playAlbumButton: $('playAlbumButton'), queueAlbumButton: $('queueAlbumButton'), deleteAlbumButton: $('deleteAlbumButton'),
     nowTitle: $('nowTitle'), nowArtist: $('nowArtist'), playerCover: $('playerCover'), playPauseButton: $('playPauseButton'), previousButton: $('previousButton'),
-    nextButton: $('nextButton'), shuffleButton: $('shuffleButton'), repeatButton: $('repeatButton'), seekBar: $('seekBar'), currentTime: $('currentTime'),
+    nextButton: $('nextButton'), addCurrentToQueueButton: $('addCurrentToQueueButton'), loveCurrentButton: $('loveCurrentButton'), shuffleButton: $('shuffleButton'), repeatButton: $('repeatButton'), seekBar: $('seekBar'), currentTime: $('currentTime'),
     durationTime: $('durationTime'), volumeBar: $('volumeBar'), volumeGraphic: $('volumeGraphic'), showLyricsButton: $('showLyricsButton'), toggleLyricsButton: $('toggleLyricsButton'),
     lyricsPanel: $('lyricsPanel'), lyricsTrackTitle: $('lyricsTrackTitle'), lyricsTrackArtist: $('lyricsTrackArtist'), lyricsCover: $('lyricsCover'), lyricsContent: $('lyricsContent'), toast: $('toast'),
     manageDock: $('manageDock'), manageDockToggle: $('manageDockToggle'), manageItemList: $('manageItemList'),
     manageSelectionCount: $('manageSelectionCount'), selectAllManageButton: $('selectAllManageButton'), deleteSelectedButton: $('deleteSelectedButton'),
     settingsButton: $('settingsButton'), settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), doneSettingsButton: $('doneSettingsButton'), resetSettingsButton: $('resetSettingsButton'), hueSlider: $('hueSlider'), brightnessSlider: $('brightnessSlider'), saturationSlider: $('saturationSlider'), zoomSlider: $('zoomSlider'), hueValue: $('hueValue'), brightnessValue: $('brightnessValue'), saturationValue: $('saturationValue'), zoomValue: $('zoomValue'),
-    showQueueButton: $('showQueueButton'), mobileMenuButton: $('mobileMenuButton'), drawerScrim: $('drawerScrim'), librarySidebar: $('librarySidebar'), closeDrawerButton: $('closeDrawerButton'), mobileManageButton: $('mobileManageButton'), installButton: $('installButton'), persistenceText: $('persistenceText'), requestPersistenceButton: $('requestPersistenceButton'), confirmDialog: $('confirmDialog'), confirmMessage: $('confirmMessage'), confirmYesButton: $('confirmYesButton'), confirmNoButton: $('confirmNoButton')
+    addMenuDialog: $('addMenuDialog'), closeAddMenuButton: $('closeAddMenuButton'), addMenuTrackName: $('addMenuTrackName'), addMenuQueueButton: $('addMenuQueueButton'), addMenuNewPlaylistButton: $('addMenuNewPlaylistButton'), addMenuPlaylistButton: $('addMenuPlaylistButton'), addMenuPlaylistList: $('addMenuPlaylistList'), addMenuLovedButton: $('addMenuLovedButton'),
+    showQueueButton: $('showQueueButton'), mobileMenuButton: $('mobileMenuButton'), drawerScrim: $('drawerScrim'), librarySidebar: $('librarySidebar'), closeDrawerButton: $('closeDrawerButton'), mobileManageButton: $('mobileManageButton'), installButton: $('installButton'), installHelpText: $('installHelpText'), installStateBadge: $('installStateBadge'), iosInstallSteps: $('iosInstallSteps'), persistenceText: $('persistenceText'), requestPersistenceButton: $('requestPersistenceButton'), confirmDialog: $('confirmDialog'), confirmMessage: $('confirmMessage'), confirmYesButton: $('confirmYesButton'), confirmNoButton: $('confirmNoButton')
   };
 
   const mobileLayout = window.matchMedia('(max-width: 960px)');
@@ -405,9 +410,146 @@
     return a.title.localeCompare(b.title, undefined, { numeric: true });
   }
 
+  const LOVED_PLAYLIST_ID = 'loved-playlist';
+
+  function normalizePlaylists(value) {
+    const source = Array.isArray(value) ? value : [];
+    const clean = source.map((playlist) => ({
+      id: String(playlist.id || stableId([playlist.name || 'playlist', String(Date.now())])),
+      name: String(playlist.name || 'Untitled playlist').trim().slice(0, 60) || 'Untitled playlist',
+      trackIds: Array.isArray(playlist.trackIds) ? playlist.trackIds.map(String) : [],
+      createdAt: Number(playlist.createdAt) || Date.now()
+    }));
+    if (!clean.some((playlist) => playlist.id === LOVED_PLAYLIST_ID)) clean.unshift({ id: LOVED_PLAYLIST_ID, name: 'LovedPlaylist', trackIds: [], createdAt: Date.now() });
+    const loved = clean.find((playlist) => playlist.id === LOVED_PLAYLIST_ID);
+    loved.name = 'LovedPlaylist';
+    return clean;
+  }
+
+  async function loadPlaylists() {
+    state.playlists = normalizePlaylists(await getSetting('playlists', []));
+    savePlaylists();
+  }
+
+  function savePlaylists() { if (state.db) setSetting('playlists', state.playlists); }
+  function getPlaylist(id) { return state.playlists.find((playlist) => playlist.id === id); }
+  function playlistTracks(playlist) {
+    if (!playlist) return [];
+    const byId = new Map(state.tracks.map((track) => [track.id, track]));
+    return playlist.trackIds.map((id) => byId.get(id)).filter(Boolean);
+  }
+  function uniquePlaylistName(name, ignoreId = null) {
+    const base = String(name || '').trim().slice(0, 60);
+    if (!base) return null;
+    const exists = state.playlists.some((playlist) => playlist.id !== ignoreId && playlist.name.toLowerCase() === base.toLowerCase());
+    return exists ? null : base;
+  }
+  function addTrackToPlaylist(track, playlistId = LOVED_PLAYLIST_ID) {
+    if (!track) return false;
+    const playlist = getPlaylist(playlistId);
+    if (!playlist) return false;
+    if (playlist.trackIds.includes(track.id)) { showToast(`“${track.title}” is already in ${playlist.name}.`); return false; }
+    playlist.trackIds.push(track.id);
+    savePlaylists(); renderPlaylists(); renderPlaylistDetail(); syncLoveButton();
+    showToast(`Added “${track.title}” to ${playlist.name}.`);
+    return true;
+  }
+  function removeTrackFromPlaylist(playlist, index) {
+    if (!playlist || index < 0 || index >= playlist.trackIds.length) return;
+    playlist.trackIds.splice(index, 1); savePlaylists(); renderPlaylists(); renderPlaylistDetail(); syncLoveButton();
+  }
+
+  function toggleCurrentTrackLoved() {
+    const track = state.currentTrack;
+    if (!track) { showToast('Play a song first.'); return; }
+    const loved = getPlaylist(LOVED_PLAYLIST_ID);
+    if (!loved) return;
+    const index = loved.trackIds.indexOf(track.id);
+    if (index >= 0) {
+      loved.trackIds.splice(index, 1);
+      savePlaylists(); renderPlaylists(); renderPlaylistDetail(); syncLoveButton();
+      showToast(`Removed “${track.title}” from LovedPlaylist.`);
+      return;
+    }
+    addTrackToPlaylist(track, LOVED_PLAYLIST_ID);
+  }
+  function movePlaylistTrack(playlist, from, to) {
+    if (!playlist || from === to || from < 0 || to < 0 || from >= playlist.trackIds.length || to >= playlist.trackIds.length) return;
+    const [id] = playlist.trackIds.splice(from, 1); playlist.trackIds.splice(to, 0, id); savePlaylists(); renderPlaylistDetail();
+  }
+  function choosePlaylistForTrack(track) {
+    const choices = state.playlists.map((playlist, index) => `${index + 1}. ${playlist.name}`).join('\n');
+    const answer = window.prompt(`Add “${track.title}” to which playlist?\n${choices}\n\nEnter a number or playlist name:`);
+    if (!answer) return;
+    const numeric = Number(answer);
+    const playlist = Number.isInteger(numeric) && numeric >= 1 ? state.playlists[numeric - 1] : state.playlists.find((item) => item.name.toLowerCase() === answer.trim().toLowerCase());
+    if (!playlist) { showToast('Playlist not found.'); return; }
+    addTrackToPlaylist(track, playlist.id);
+  }
+
+  function renderAddMenuPlaylists() {
+    if (!els.addMenuPlaylistList) return;
+    els.addMenuPlaylistList.innerHTML = '';
+    const playlists = state.playlists.filter((playlist) => playlist.id !== LOVED_PLAYLIST_ID);
+    if (!playlists.length) {
+      const empty = document.createElement('p');
+      empty.className = 'add-menu-empty';
+      empty.textContent = 'No custom playlists yet. Use “Add to new playlist” first.';
+      els.addMenuPlaylistList.appendChild(empty);
+      return;
+    }
+    playlists.forEach((playlist) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'add-menu-playlist-choice';
+      button.textContent = `${playlist.name} (${playlist.trackIds.length})`;
+      button.addEventListener('click', () => {
+        if (addTrackToPlaylist(state.currentTrack, playlist.id)) closeAddMenu();
+      });
+      els.addMenuPlaylistList.appendChild(button);
+    });
+  }
+
+  function openAddMenu() {
+    if (!state.currentTrack) { showToast('Play a song first.'); return; }
+    els.addMenuTrackName.textContent = `${state.currentTrack.title} — ${state.currentTrack.artist || 'Unknown artist'}`;
+    els.addMenuPlaylistList.classList.add('hidden');
+    els.addMenuPlaylistButton.setAttribute('aria-expanded', 'false');
+    renderAddMenuPlaylists();
+    els.addMenuDialog.classList.remove('hidden');
+    els.addCurrentToQueueButton.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('modal-open');
+    focusElement(els.addMenuQueueButton);
+  }
+
+  function closeAddMenu() {
+    if (!els.addMenuDialog || els.addMenuDialog.classList.contains('hidden')) return;
+    els.addMenuDialog.classList.add('hidden');
+    els.addCurrentToQueueButton.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('modal-open');
+    focusElement(els.addCurrentToQueueButton);
+  }
+
+  function createPlaylistForTrack(track) {
+    if (!track) return;
+    const requested = window.prompt('Name the new playlist:');
+    if (requested == null) return;
+    const name = uniquePlaylistName(requested);
+    if (!name) { showToast('Enter a unique playlist name.'); return; }
+    const playlist = { id: stableId([name, String(Date.now()), String(Math.random())]), name, trackIds: [], createdAt: Date.now() };
+    state.playlists.push(playlist);
+    savePlaylists();
+    addTrackToPlaylist(track, playlist.id);
+    renderCounts();
+    closeAddMenu();
+  }
+
   async function loadLibrary() {
     state.tracks = await getAllTracks();
     state.albums = buildAlbums(state.tracks);
+    await loadPlaylists();
+    state.playlists.forEach((playlist) => { playlist.trackIds = playlist.trackIds.filter((id) => state.tracks.some((track) => track.id === id)); });
+    savePlaylists();
     state.manageSelected.clear();
     renderAll();
     renderManageItems();
@@ -460,7 +602,7 @@
       container.appendChild(img);
     } else {
       const img = document.createElement('img');
-      img.src = 'assets/logo.png';
+      img.src = './assets/logo.png';
       img.alt = '';
       img.className = 'melodicaine-placeholder';
       img.setAttribute('aria-hidden', 'true');
@@ -602,7 +744,7 @@
     els.trackTableBody.innerHTML = '';
     tracks.forEach((track, index) => {
       const row = document.createElement('tr');
-      row.innerHTML = `<td>${index + 1}</td><td></td><td></td><td></td><td>${track.lyricsFile ? '<span class="lyric-badge">VTT</span>' : '—'}</td><td><div class="row-actions"><button class="icon-button queue-add" title="Add to queue">＋</button></div></td>`;
+      row.innerHTML = `<td>${index + 1}</td><td></td><td></td><td></td><td>${track.lyricsFile ? '<span class="lyric-badge">VTT</span>' : '—'}</td><td><div class="row-actions"><button class="icon-button playlist-add" title="Add to playlist">♬＋</button><button class="icon-button love-add" title="Add to LovedPlaylist">♥</button><button class="icon-button queue-add" title="Add to queue">＋</button></div></td>`;
       row.children[1].textContent = track.title;
       row.children[2].textContent = track.artist;
       row.children[3].textContent = track.album;
@@ -610,6 +752,8 @@
       row.addEventListener('click', (event) => {
         if (!event.target.closest('button')) playTrack(track, tracks);
       });
+      row.querySelector('.playlist-add').addEventListener('click', (event) => { event.stopPropagation(); choosePlaylistForTrack(track); });
+      row.querySelector('.love-add').addEventListener('click', (event) => { event.stopPropagation(); addTrackToPlaylist(track); });
       row.querySelector('.queue-add').addEventListener('click', (event) => {
         event.stopPropagation();
         addToQueue([track]);
@@ -624,21 +768,106 @@
     state.queue.forEach((track, index) => {
       const item = document.createElement('div');
       item.className = `queue-item${index === state.queueIndex ? ' active' : ''}`;
-      item.innerHTML = `<span>${index + 1}</span><div><strong></strong><p></p></div><button class="icon-button" title="Remove">×</button>`;
+      item.draggable = true;
+      item.dataset.queueIndex = index;
+      item.innerHTML = `<button class="queue-drag" title="Drag to reorder" aria-label="Drag ${track.title} to reorder">☰</button><span>${index + 1}</span><div><strong></strong><p></p></div><div class="queue-actions"><button class="icon-button queue-move-up" title="Move up" aria-label="Move up">↑</button><button class="icon-button queue-move-down" title="Move down" aria-label="Move down">↓</button><button class="icon-button queue-duplicate" title="Add another copy to queue" aria-label="Add another copy to queue">＋</button><button class="icon-button queue-remove" title="Remove from queue" aria-label="Remove from queue">×</button></div>`;
       item.querySelector('strong').textContent = track.title;
       item.querySelector('p').textContent = `${track.artist} · ${track.album}`;
       item.addEventListener('click', (event) => { if (!event.target.closest('button')) playQueueIndex(index); });
-      item.querySelector('button').addEventListener('click', () => removeQueueIndex(index));
+      item.querySelector('.queue-remove').addEventListener('click', () => removeQueueIndex(index));
+      item.querySelector('.queue-duplicate').addEventListener('click', () => addToQueue([track]));
+      item.querySelector('.queue-move-up').addEventListener('click', () => moveQueueItem(index, index - 1));
+      item.querySelector('.queue-move-down').addEventListener('click', () => moveQueueItem(index, index + 1));
+      item.addEventListener('dragstart', (event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(index)); item.classList.add('dragging'); });
+      item.addEventListener('dragend', () => item.classList.remove('dragging'));
+      item.addEventListener('dragover', (event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; });
+      item.addEventListener('drop', (event) => { event.preventDefault(); const from = Number(event.dataTransfer.getData('text/plain')); moveQueueItem(from, index); });
       els.queueList.appendChild(item);
     });
     els.queueEmpty.style.display = state.queue.length ? 'none' : 'grid';
     els.queueCount.textContent = state.queue.length;
   }
 
+  function moveQueueItem(from, to) {
+    if (from === to || from < 0 || to < 0 || from >= state.queue.length || to >= state.queue.length) return;
+    const [track] = state.queue.splice(from, 1);
+    state.queue.splice(to, 0, track);
+    if (state.queueIndex === from) state.queueIndex = to;
+    else if (from < state.queueIndex && to >= state.queueIndex) state.queueIndex--;
+    else if (from > state.queueIndex && to <= state.queueIndex) state.queueIndex++;
+    renderQueue();
+  }
+
+  function renderPlaylists() {
+    if (!els.playlistGrid) return;
+    els.playlistGrid.innerHTML = '';
+    state.playlists.forEach((playlist) => {
+      const tracks = playlistTracks(playlist);
+      const card = document.createElement('article');
+      card.className = 'album-card playlist-card'; card.tabIndex = 0;
+      const cover = document.createElement('div'); cover.className = 'album-cover playlist-cover';
+      makeCover(cover, tracks.find((track) => track.coverFile)?.coverFile, 'Playlist');
+      const title = document.createElement('h3'); title.textContent = playlist.name;
+      const count = document.createElement('p'); count.textContent = `${tracks.length} track${tracks.length === 1 ? '' : 's'}`;
+      card.append(cover, title, count);
+      card.addEventListener('click', () => openPlaylist(playlist.id));
+      card.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPlaylist(playlist.id); } });
+      els.playlistGrid.appendChild(card);
+    });
+    els.playlistEmpty.style.display = state.playlists.length ? 'none' : 'grid';
+  }
+
+  function openPlaylist(id) {
+    state.selectedPlaylistId = id;
+    document.querySelectorAll('.view').forEach((view) => view.classList.remove('active-view'));
+    els.albumDetail.classList.add('hidden');
+    els.playlistDetail?.classList.add('hidden');
+    els.playlistDetail.classList.remove('hidden');
+    renderPlaylistDetail();
+  }
+  function closePlaylist() { state.selectedPlaylistId = null; els.playlistDetail.classList.add('hidden'); showView('playlists'); }
+  function renderPlaylistDetail() {
+    if (!els.playlistDetail || els.playlistDetail.classList.contains('hidden') && !state.selectedPlaylistId) return;
+    const playlist = getPlaylist(state.selectedPlaylistId); if (!playlist) { if (state.selectedPlaylistId) closePlaylist(); return; }
+    const tracks = playlistTracks(playlist);
+    els.playlistDetailTitle.textContent = playlist.name;
+    els.playlistDetailStats.textContent = `${tracks.length} track${tracks.length === 1 ? '' : 's'} · drag or use arrows to reorder`;
+    els.deletePlaylistButton.disabled = playlist.id === LOVED_PLAYLIST_ID;
+    els.renamePlaylistButton.disabled = playlist.id === LOVED_PLAYLIST_ID;
+    els.playlistTrackList.innerHTML = '';
+    tracks.forEach((track, index) => {
+      const row = document.createElement('div'); row.className = 'queue-item playlist-track-item'; row.draggable = true;
+      row.innerHTML = `<button class="queue-drag" title="Drag to reorder">☰</button><span>${index + 1}</span><div><strong></strong><p></p></div><div class="queue-actions"><button class="icon-button move-up" title="Move up">↑</button><button class="icon-button move-down" title="Move down">↓</button><button class="icon-button add-queue" title="Add to queue">＋</button><button class="icon-button remove-playlist" title="Remove from playlist">×</button></div>`;
+      row.querySelector('strong').textContent = track.title; row.querySelector('p').textContent = `${track.artist} · ${track.album}`;
+      row.addEventListener('click', (event) => { if (!event.target.closest('button')) playTrack(track, tracks, { type: 'playlist', id: playlist.id }); });
+      row.querySelector('.move-up').addEventListener('click', () => movePlaylistTrack(playlist, index, index - 1));
+      row.querySelector('.move-down').addEventListener('click', () => movePlaylistTrack(playlist, index, index + 1));
+      row.querySelector('.add-queue').addEventListener('click', () => addToQueue([track]));
+      row.querySelector('.remove-playlist').addEventListener('click', () => removeTrackFromPlaylist(playlist, index));
+      row.addEventListener('dragstart', (event) => { event.dataTransfer.setData('text/plain', String(index)); row.classList.add('dragging'); });
+      row.addEventListener('dragend', () => row.classList.remove('dragging'));
+      row.addEventListener('dragover', (event) => event.preventDefault());
+      row.addEventListener('drop', (event) => { event.preventDefault(); movePlaylistTrack(playlist, Number(event.dataTransfer.getData('text/plain')), index); });
+      els.playlistTrackList.appendChild(row);
+    });
+    els.playlistDetailEmpty.style.display = tracks.length ? 'none' : 'grid';
+  }
+
+  function syncLoveButton() {
+    if (!els.loveCurrentButton) return;
+    const loved = getPlaylist(LOVED_PLAYLIST_ID);
+    const active = Boolean(state.currentTrack && loved?.trackIds.includes(state.currentTrack.id));
+    els.loveCurrentButton.classList.toggle('active', active); els.loveCurrentButton.setAttribute('aria-pressed', String(active));
+    const label = active ? 'Remove current song from LovedPlaylist' : 'Add current song to LovedPlaylist';
+    els.loveCurrentButton.title = label;
+    els.loveCurrentButton.setAttribute('aria-label', label);
+  }
+
   function renderCounts() {
     els.artistCount.textContent = buildArtists().length;
     els.albumCount.textContent = state.albums.length;
     els.trackCount.textContent = state.tracks.length;
+    els.playlistCount.textContent = state.playlists.length;
     els.queueCount.textContent = state.queue.length;
   }
 
@@ -646,6 +875,7 @@
     renderArtists();
     renderAlbums();
     renderTracks();
+    renderPlaylists();
     renderQueue();
     renderCounts();
     if (state.selectedAlbumId) renderAlbumDetail();
@@ -678,7 +908,7 @@
       row.innerHTML = `<span>${track.trackNumber || index + 1}</span><div><div class="track-title"></div><div class="track-subtitle"></div></div><span>${track.lyricsFile ? '<span class="lyric-badge">Lyrics</span>' : ''}</span><button class="icon-button" title="Add to queue">＋</button>`;
       row.querySelector('.track-title').textContent = track.title;
       row.querySelector('.track-subtitle').textContent = track.artist;
-      row.addEventListener('click', (event) => { if (!event.target.closest('button')) playTrack(track, album.tracks); });
+      row.addEventListener('click', (event) => { if (!event.target.closest('button')) playTrack(track, album.tracks, { type: 'album', id: album.id }); });
       row.querySelector('button').addEventListener('click', (event) => { event.stopPropagation(); addToQueue([track]); });
       els.albumTrackList.appendChild(row);
     });
@@ -687,6 +917,7 @@
   function showView(view) {
     state.activeView = view;
     els.albumDetail.classList.add('hidden');
+    els.playlistDetail.classList.add('hidden');
     document.querySelectorAll('.view').forEach((v) => v.classList.remove('active-view'));
     $(`${view}View`).classList.add('active-view');
     document.querySelectorAll('.nav-button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
@@ -710,14 +941,16 @@
     renderQueue();
   }
 
-  async function playTrack(track, contextTracks = null) {
+  async function playTrack(track, contextTracks = null, context = null) {
     if (contextTracks) {
       state.queue = [...contextTracks];
       state.queueIndex = state.queue.findIndex((t) => t.id === track.id);
+      state.playbackContext = context || { type: 'queue', id: null };
     } else {
       const existing = state.queue.findIndex((t) => t.id === track.id);
       if (existing >= 0) state.queueIndex = existing;
       else { state.queue.push(track); state.queueIndex = state.queue.length - 1; }
+      state.playbackContext = { type: 'queue', id: null };
     }
     state.currentTrack = track;
     updateMediaSession(track);
@@ -728,6 +961,7 @@
     updateNowPlaying(track);
     await loadLyrics(track);
     renderQueue();
+    syncLoveButton();
     try { await audio.play(); } catch (error) { console.warn(error); }
   }
 
@@ -961,6 +1195,111 @@
     Object.entries(handlers).forEach(([action, handler]) => { try { navigator.mediaSession.setActionHandler(action, handler); } catch {} });
   }
 
+  function isStandaloneApp() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      window.navigator.standalone === true;
+  }
+
+  function getInstallPlatform() {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(ua);
+    return { isIOS, isAndroid };
+  }
+
+  function updateInstallUI() {
+    if (!els.installButton || !els.installHelpText || !els.installStateBadge) return;
+    const installed = isStandaloneApp();
+    const { isIOS, isAndroid } = getInstallPlatform();
+    els.iosInstallSteps?.classList.add('hidden');
+    els.installButton.setAttribute('aria-expanded', 'false');
+
+    if (installed) {
+      els.installStateBadge.textContent = 'Installed';
+      els.installStateBadge.classList.add('installed');
+      els.installHelpText.textContent = 'Melodicaine is running as an installed app on this device.';
+      els.installButton.textContent = 'Already installed';
+      els.installButton.disabled = true;
+      return;
+    }
+
+    els.installStateBadge.textContent = isIOS ? 'Manual setup' : 'Available';
+    els.installStateBadge.classList.remove('installed');
+    els.installButton.disabled = false;
+
+    if (state.deferredInstallPrompt) {
+      els.installButton.textContent = 'Install Melodicaine';
+      els.installHelpText.textContent = isAndroid
+        ? 'Install Melodicaine to your Home Screen and launch it like a standalone Android app.'
+        : 'Install Melodicaine as a standalone desktop or mobile application.';
+      return;
+    }
+
+    if (isIOS) {
+      els.installButton.textContent = 'Show iPhone setup and limits';
+      els.installHelpText.textContent = 'iPhone installation is manual. The button below opens the exact Safari steps and explains the storage limit.';
+      return;
+    }
+
+    if (isAndroid) {
+      els.installButton.textContent = 'Show Android install help';
+      els.installHelpText.textContent = 'Use Chrome or another install-capable browser. The browser may also show “Install app” in its menu.';
+      return;
+    }
+
+    els.installButton.textContent = 'Install Melodicaine';
+    els.installHelpText.textContent = 'Open this site in Chrome, Edge, or another install-capable browser to install it as an app.';
+  }
+
+  async function handleInstallRequest() {
+    if (isStandaloneApp()) { updateInstallUI(); return; }
+    const { isIOS, isAndroid } = getInstallPlatform();
+
+    if (state.deferredInstallPrompt) {
+      const promptEvent = state.deferredInstallPrompt;
+      await promptEvent.prompt();
+      const choice = await promptEvent.userChoice;
+      if (choice?.outcome === 'accepted') state.deferredInstallPrompt = null;
+      updateInstallUI();
+      return;
+    }
+
+    if (isIOS) {
+      const panel = els.iosInstallSteps;
+      if (!panel) return;
+      const willOpen = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !willOpen);
+      els.installButton.setAttribute('aria-expanded', String(willOpen));
+      els.installButton.textContent = willOpen ? 'Hide iPhone setup and limits' : 'Show iPhone setup and limits';
+      if (willOpen) requestAnimationFrame(() => { panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); focusElement(panel); });
+      return;
+    }
+
+    els.installHelpText.textContent = isAndroid
+      ? 'In Chrome, open the ⋮ menu and choose “Install app” or “Add to Home screen.” Then launch Melodicaine from its icon.'
+      : 'Open the browser menu and choose “Install Melodicaine” or “Install app.” Chrome and Edge support this directly.';
+  }
+
+  function configureMobileImportCapabilities() {
+    const { isIOS } = getInstallPlatform();
+    if (!isIOS) return;
+    if (els.folderPicker) {
+      els.folderPicker.disabled = true;
+      els.folderPicker.removeAttribute('webkitdirectory');
+      els.folderPicker.removeAttribute('directory');
+    }
+    if (els.folderPickerLabel) {
+      els.folderPickerLabel.classList.add('disabled-import');
+      els.folderPickerLabel.setAttribute('aria-disabled', 'true');
+      els.folderPickerLabel.textContent = 'Album folder import unavailable on iPhone';
+      els.folderPickerLabel.removeAttribute('for');
+    }
+    if (els.manageMobileHelp) {
+      els.manageMobileHelp.innerHTML = '<strong>iPhone:</strong> use “Import individual files.” iOS cannot grant a web app ongoing access to a folder, and large imports consume Safari-managed website storage.';
+    }
+  }
+
   function registerPWA() {
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('./service-worker.js').catch((error) => console.warn('Service worker registration failed', error));
@@ -968,29 +1307,31 @@
     window.addEventListener('beforeinstallprompt', (event) => {
       event.preventDefault();
       state.deferredInstallPrompt = event;
-      els.installButton?.classList.remove('hidden');
+      updateInstallUI();
     });
     window.addEventListener('appinstalled', () => {
       state.deferredInstallPrompt = null;
-      els.installButton?.classList.add('hidden');
+      updateInstallUI();
       showToast(`${APP_NAME} installed.`);
     });
+    window.matchMedia('(display-mode: standalone)').addEventListener?.('change', updateInstallUI);
+    updateInstallUI();
   }
 
 
   const UI_GRAPHICS = Object.freeze({
-    play: 'assets/ui/play.png',
-    pause: 'assets/ui/pause.png',
-    previous: 'assets/ui/back.png',
-    next: 'assets/ui/forward.png',
-    shuffleOff: 'assets/ui/shuffleoff.png',
-    shuffleOn: 'assets/ui/shuffleon.png',
-    repeatOff: 'assets/ui/repeatoff.png',
-    repeatAll: 'assets/ui/repeaton.png',
-    repeatOne: 'assets/ui/repeat1.png',
-    volumeLow: 'assets/ui/volumelow.png',
-    volumeMedium: 'assets/ui/volumemedium.png',
-    volumeLoud: 'assets/ui/volumeloud.png'
+    play: './assets/ui/play.png',
+    pause: './assets/ui/pause.png',
+    previous: './assets/ui/back.png',
+    next: './assets/ui/forward.png',
+    shuffleOff: './assets/ui/shuffleoff.png',
+    shuffleOn: './assets/ui/shuffleon.png',
+    repeatOff: './assets/ui/repeatoff.png',
+    repeatAll: './assets/ui/repeaton.png',
+    repeatOne: './assets/ui/repeat1.png',
+    volumeLow: './assets/ui/volumelow.png',
+    volumeMedium: './assets/ui/volumemedium.png',
+    volumeLoud: './assets/ui/volumeloud.png'
   });
 
   function setButtonGraphic(button, source, title, ariaLabel, pressed = null) {
@@ -1043,7 +1384,7 @@
     els.mobileManageButton?.addEventListener('click', openMobileManage);
     document.querySelectorAll('[data-mobile-view]').forEach((button) => button.addEventListener('click', () => { showView(button.dataset.mobileView); setDrawer(false); }));
     els.requestPersistenceButton?.addEventListener('click', () => updatePersistenceStatus(true));
-    els.installButton?.addEventListener('click', async () => { if (!state.deferredInstallPrompt) return; state.deferredInstallPrompt.prompt(); await state.deferredInstallPrompt.userChoice; state.deferredInstallPrompt = null; els.installButton.classList.add('hidden'); });
+    els.installButton?.addEventListener('click', handleInstallRequest);
     els.settingsButton.addEventListener('click', openSettings);
     els.closeSettingsButton.addEventListener('click', closeSettings);
     els.doneSettingsButton.addEventListener('click', closeSettings);
@@ -1068,7 +1409,7 @@
     els.confirmDialog.addEventListener('click', (event) => { if (event.target === els.confirmDialog) finishConfirmation(false); });
     els.folderPicker.addEventListener('change', (e) => importFiles(e.target.files));
     els.filePicker.addEventListener('change', (e) => importFiles(e.target.files));
-    els.searchInput.addEventListener('input', () => { state.search = els.searchInput.value.trim().toLowerCase(); renderArtists(); renderAlbums(); renderTracks(); });
+    els.searchInput.addEventListener('input', () => { state.search = els.searchInput.value.trim().toLowerCase(); renderArtists(); renderAlbums(); renderTracks(); renderPlaylists(); });
     els.albumSort.addEventListener('change', () => {
       if (els.albumSort.value === 'artist') {
         renderArtists();
@@ -1086,8 +1427,20 @@
     }));
     els.closeAlbumButton.addEventListener('click', closeAlbum);
     els.playAllButton.addEventListener('click', () => { const tracks = filteredTracks(); if (tracks.length) playTrack(tracks[0], tracks); });
+    els.createPlaylistForm.addEventListener('submit', (event) => {
+      event.preventDefault(); const name = uniquePlaylistName(els.playlistNameInput.value);
+      if (!name) { showToast('Enter a unique playlist name.'); return; }
+      const playlist = { id: stableId([name, String(Date.now()), String(Math.random())]), name, trackIds: [], createdAt: Date.now() };
+      state.playlists.push(playlist); savePlaylists(); els.playlistNameInput.value = ''; renderPlaylists(); renderCounts(); openPlaylist(playlist.id);
+    });
+    els.closePlaylistButton.addEventListener('click', closePlaylist);
+    els.playPlaylistButton.addEventListener('click', () => { const playlist = getPlaylist(state.selectedPlaylistId); const tracks = playlistTracks(playlist); if (tracks.length) playTrack(tracks[0], tracks, { type: 'playlist', id: playlist.id }); });
+    els.queuePlaylistButton.addEventListener('click', () => { const tracks = playlistTracks(getPlaylist(state.selectedPlaylistId)); if (tracks.length) addToQueue(tracks); });
+    els.renamePlaylistButton.addEventListener('click', () => { const playlist = getPlaylist(state.selectedPlaylistId); if (!playlist || playlist.id === LOVED_PLAYLIST_ID) return; const name = window.prompt('Rename playlist:', playlist.name); if (name == null) return; const clean = uniquePlaylistName(name, playlist.id); if (!clean) { showToast('Enter a unique playlist name.'); return; } playlist.name = clean; savePlaylists(); renderPlaylists(); renderPlaylistDetail(); });
+    els.deletePlaylistButton.addEventListener('click', async () => { const playlist = getPlaylist(state.selectedPlaylistId); if (!playlist || playlist.id === LOVED_PLAYLIST_ID) return; if (!(await askConfirmation(`Delete playlist “${playlist.name}”? The music files will remain in your library.`))) return; state.playlists = state.playlists.filter((item) => item.id !== playlist.id); savePlaylists(); closePlaylist(); renderPlaylists(); renderCounts(); });
+
     els.clearQueueButton.addEventListener('click', () => { state.queue = []; state.queueIndex = -1; renderQueue(); });
-    els.playAlbumButton.addEventListener('click', () => { const a = state.albums.find((x) => x.id === state.selectedAlbumId); if (a?.tracks.length) playTrack(a.tracks[0], a.tracks); });
+    els.playAlbumButton.addEventListener('click', () => { const a = state.albums.find((x) => x.id === state.selectedAlbumId); if (a?.tracks.length) playTrack(a.tracks[0], a.tracks, { type: 'album', id: a.id }); });
     els.queueAlbumButton.addEventListener('click', () => { const a = state.albums.find((x) => x.id === state.selectedAlbumId); if (a) addToQueue(a.tracks); });
     els.deleteAlbumButton.addEventListener('click', async () => {
       const album = state.albums.find((x) => x.id === state.selectedAlbumId);
@@ -1114,6 +1467,18 @@
     });
     els.nextButton.addEventListener('click', () => nextTrack(true));
     els.previousButton.addEventListener('click', previousTrack);
+    els.addCurrentToQueueButton.addEventListener('click', openAddMenu);
+    els.closeAddMenuButton.addEventListener('click', closeAddMenu);
+    els.addMenuDialog.addEventListener('click', (event) => { if (event.target === els.addMenuDialog) closeAddMenu(); });
+    els.addMenuQueueButton.addEventListener('click', () => { addToQueue([state.currentTrack]); closeAddMenu(); });
+    els.addMenuNewPlaylistButton.addEventListener('click', () => createPlaylistForTrack(state.currentTrack));
+    els.addMenuPlaylistButton.addEventListener('click', () => {
+      const open = els.addMenuPlaylistList.classList.toggle('hidden') === false;
+      els.addMenuPlaylistButton.setAttribute('aria-expanded', String(open));
+      if (open) focusElement(els.addMenuPlaylistList.querySelector('button'));
+    });
+    els.addMenuLovedButton.addEventListener('click', () => { if (addTrackToPlaylist(state.currentTrack)) closeAddMenu(); });
+    els.loveCurrentButton.addEventListener('click', toggleCurrentTrackLoved);
     els.shuffleButton.addEventListener('click', () => { state.shuffle = !state.shuffle; syncShuffleGraphic(); });
     els.repeatButton.addEventListener('click', () => {
       state.repeat = state.repeat === 'off' ? 'all' : state.repeat === 'all' ? 'one' : 'off';
@@ -1128,6 +1493,7 @@
     els.lyricsPanel.addEventListener('click', (event) => { if (event.target === els.lyricsPanel) toggleLyrics(false); });
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
+      if (!els.addMenuDialog.classList.contains('hidden')) { closeAddMenu(); return; }
       if (!els.settingsDialog.classList.contains('hidden')) { closeSettings(); return; }
       toggleLyrics(false);
       if (!els.confirmDialog.classList.contains('hidden')) finishConfirmation(false);
@@ -1171,10 +1537,12 @@
       syncRepeatGraphic();
       syncPlayPauseGraphic();
       syncVolumeGraphic();
+    syncLoveButton();
       bindEvents();
       syncDrawerForViewport();
       configureMediaSession();
-      registerPWA();
+      configureMobileImportCapabilities();
+    registerPWA();
       await loadLibrary();
       updateStorageEstimate();
       updatePersistenceStatus(false);

@@ -586,3 +586,139 @@ body { zoom: var(--interface-zoom); }
   .transport-buttons .graphic-button { width: 38px; height: 38px; flex-basis: 38px; }
   .transport-buttons .play-button.graphic-button { width: 46px; height: 46px; flex-basis: 46px; }
 }
+
+
+/* Playlists, loved songs, and reorderable queue */
+.playlist-create-form { display:flex; gap:.65rem; align-items:center; flex-wrap:wrap; }
+.playlist-create-form input { min-width:min(18rem, 70vw); }
+.playlist-detail-header { display:flex; justify-content:space-between; gap:1rem; align-items:flex-end; margin-bottom:1rem; flex-wrap:wrap; }
+.queue-item { grid-template-columns:auto auto minmax(0,1fr) auto; }
+.queue-drag { cursor:grab; border:0; background:transparent; color:var(--muted); min-width:2rem; min-height:2.75rem; font-size:1.05rem; }
+.queue-item.dragging { opacity:.48; }
+.queue-actions { display:flex; gap:.3rem; align-items:center; }
+.queue-actions .icon-button { min-width:2.35rem; min-height:2.35rem; }
+.text-graphic-button { border:0; background:transparent; color:var(--accent); font-size:1.7rem; font-weight:800; min-width:2.6rem; min-height:2.6rem; cursor:pointer; border-radius:50%; }
+.text-graphic-button:hover, .text-graphic-button:focus-visible, .text-graphic-button.active { background:var(--accent-soft); }
+.love-button { font-size:1.45rem; }
+.playlist-card .album-cover { position:relative; }
+.playlist-card .album-cover::after { content:'PLAYLIST'; position:absolute; right:.5rem; bottom:.5rem; background:rgba(0,0,0,.78); color:var(--accent); padding:.2rem .45rem; border-radius:.35rem; font-size:.65rem; font-weight:800; letter-spacing:.08em; }
+@media (max-width: 720px) {
+  .playlist-create-form { width:100%; }
+  .playlist-create-form input, .playlist-create-form button { width:100%; }
+  .queue-item { grid-template-columns:auto auto minmax(0,1fr); align-items:start; }
+  .queue-actions { grid-column:2 / -1; justify-content:flex-end; width:100%; }
+  .queue-move-up, .queue-move-down, .move-up, .move-down { display:inline-flex; }
+  .transport-buttons { gap:.1rem; }
+  .text-graphic-button { min-width:2.35rem; }
+}
+
+/* Current-track add menu */
+.add-menu-dialog {
+  position: fixed;
+  z-index: 75;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, .76);
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+.add-menu-card {
+  width: min(520px, 100%);
+  max-height: min(760px, calc(100dvh - 40px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, .65);
+}
+.add-menu-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:18px; }
+.add-menu-heading h3 { font-size:24px; }
+.add-menu-track-name { margin-top:5px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:380px; }
+.add-menu-options { display:grid; gap:10px; }
+.add-menu-option {
+  width:100%; min-height:64px; text-align:left; display:grid; gap:4px;
+  padding:13px 15px; border:1px solid var(--border); border-radius:12px;
+  background:var(--panel); color:var(--text); cursor:pointer;
+}
+.add-menu-option:hover, .add-menu-option:focus-visible { border-color:var(--accent); background:var(--accent-dark); outline:none; }
+.add-menu-option strong { color:var(--accent); font-size:1rem; }
+.add-menu-option span { color:var(--muted); font-size:.86rem; line-height:1.35; }
+.add-menu-playlist-list { display:grid; gap:7px; padding:4px 0 4px 14px; }
+.add-menu-playlist-choice {
+  width:100%; min-height:46px; text-align:left; padding:10px 12px;
+  border:1px solid var(--border); border-radius:10px; background:#0b0d11; color:var(--text); cursor:pointer;
+}
+.add-menu-playlist-choice:hover, .add-menu-playlist-choice:focus-visible { border-color:var(--accent); color:var(--accent); outline:none; }
+.add-menu-empty { color:var(--muted); padding:10px 12px; border-left:2px solid var(--border); }
+.add-menu-trigger[aria-expanded="true"] { color:#06100c; background:var(--accent); border-color:var(--accent); }
+@media (max-width:480px) {
+  .add-menu-dialog { padding:max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+  .add-menu-card { max-height:calc(100dvh - 20px); border-radius:15px; padding:18px; }
+  .add-menu-heading h3 { font-size:21px; }
+  .add-menu-track-name { max-width:245px; }
+  .add-menu-option { min-height:58px; }
+}
+
+/* Settings installation controls */
+.settings-install-section {
+  margin: 22px 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel-2) 82%, transparent);
+}
+.settings-install-copy {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.settings-install-copy h4 { margin-top: 2px; font-size: 18px; }
+.install-state-badge {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 48%, var(--border));
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.install-state-badge.installed { color: #06100c; background: var(--accent); border-color: var(--accent); }
+.install-help-text { margin: 12px 0 14px; color: var(--muted); line-height: 1.5; }
+.settings-install-button { width: 100%; min-height: 46px; }
+.settings-install-button:disabled { opacity: .72; cursor: default; }
+.install-steps {
+  margin: 15px 0 0;
+  padding: 14px 14px 14px 34px;
+  border-radius: 11px;
+  background: #080a0d;
+  color: var(--text);
+  line-height: 1.55;
+}
+.install-steps li + li { margin-top: 7px; }
+@media (max-width: 520px) {
+  .settings-install-section { padding: 15px; }
+  .settings-install-copy { gap: 10px; }
+  .settings-install-copy h4 { font-size: 17px; }
+}
+
+
+/* Honest iPhone PWA installation and storage guidance */
+.install-steps h5 { margin: 0 0 10px; color: var(--accent); font-size: 1rem; }
+.install-steps ol { margin: 0; padding-left: 20px; }
+.ios-storage-warning { margin-top: 14px; padding: 12px; border: 1px solid color-mix(in srgb, #ffb84d 65%, var(--border)); border-radius: 10px; background: rgba(255, 184, 77, .08); }
+.ios-storage-warning strong { color: #ffd08a; }
+.ios-storage-warning p { margin: 7px 0 0; color: var(--text); line-height: 1.5; }
+.disabled-import { opacity: .58; cursor: not-allowed !important; filter: grayscale(.35); }
+.install-state-badge:not(.installed) { white-space: nowrap; }
+@media (max-width: 520px) {
+  .install-steps { scroll-margin: 16px; }
+  .settings-install-copy { align-items: center; }
+  .install-state-badge { font-size: 10px; }
+}
