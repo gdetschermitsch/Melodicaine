@@ -321,23 +321,49 @@
         </div>
       </section>
 
-      <div class="settings-controls">
-        <label class="setting-control" for="hueSlider">
-          <span><strong>Hue</strong><output id="hueValue" for="hueSlider">151°</output></span>
-          <input id="hueSlider" type="range" min="0" max="360" step="1" value="151" />
-        </label>
-        <label class="setting-control" for="brightnessSlider">
-          <span><strong>Brightness</strong><output id="brightnessValue" for="brightnessSlider">70%</output></span>
-          <input id="brightnessSlider" type="range" min="25" max="90" step="1" value="70" />
-        </label>
-        <label class="setting-control" for="saturationSlider">
-          <span><strong>Saturation</strong><output id="saturationValue" for="saturationSlider">64%</output></span>
-          <input id="saturationSlider" type="range" min="0" max="100" step="1" value="64" />
-        </label>
-        <label class="setting-control" for="zoomSlider">
-          <span><strong>Interface zoom</strong><output id="zoomValue" for="zoomSlider">100%</output></span>
-          <input id="zoomSlider" type="range" min="75" max="125" step="5" value="100" />
-        </label>
+      <div class="settings-sections">
+        <section class="settings-color-section" aria-labelledby="accentColorTitle">
+          <div class="settings-section-heading">
+            <span class="settings-section-number">1</span>
+            <div><h4 id="accentColorTitle">Accent color</h4><p>Buttons, highlights, focus rings, and active states.</p></div>
+          </div>
+          <div class="settings-controls">
+            <label class="setting-control" for="accentHueSlider"><span><strong>Hue</strong><output id="accentHueValue" for="accentHueSlider">151°</output></span><input id="accentHueSlider" type="range" min="0" max="360" step="1" value="151" /></label>
+            <label class="setting-control" for="accentBrightnessSlider"><span><strong>Brightness</strong><output id="accentBrightnessValue" for="accentBrightnessSlider">70%</output></span><input id="accentBrightnessSlider" type="range" min="25" max="90" step="1" value="70" /></label>
+            <label class="setting-control" for="accentSaturationSlider"><span><strong>Saturation</strong><output id="accentSaturationValue" for="accentSaturationSlider">64%</output></span><input id="accentSaturationSlider" type="range" min="0" max="100" step="1" value="64" /></label>
+          </div>
+        </section>
+
+        <section class="settings-color-section" aria-labelledby="graphicsColorTitle">
+          <div class="settings-section-heading">
+            <span class="settings-section-number">2</span>
+            <div><h4 id="graphicsColorTitle">Graphics color</h4><p>Melodicaine artwork and interface control graphics.</p></div>
+          </div>
+          <div class="settings-controls">
+            <label class="setting-control" for="graphicsHueSlider"><span><strong>Hue</strong><output id="graphicsHueValue" for="graphicsHueSlider">151°</output></span><input id="graphicsHueSlider" type="range" min="0" max="360" step="1" value="151" /></label>
+            <label class="setting-control" for="graphicsBrightnessSlider"><span><strong>Brightness</strong><output id="graphicsBrightnessValue" for="graphicsBrightnessSlider">70%</output></span><input id="graphicsBrightnessSlider" type="range" min="25" max="90" step="1" value="70" /></label>
+            <label class="setting-control" for="graphicsSaturationSlider"><span><strong>Saturation</strong><output id="graphicsSaturationValue" for="graphicsSaturationSlider">64%</output></span><input id="graphicsSaturationSlider" type="range" min="0" max="100" step="1" value="64" /></label>
+          </div>
+        </section>
+
+        <section class="settings-color-section" aria-labelledby="textColorTitle">
+          <div class="settings-section-heading">
+            <span class="settings-section-number">3</span>
+            <div><h4 id="textColorTitle">Text color</h4><p>Primary and secondary interface text.</p></div>
+          </div>
+          <div class="settings-controls">
+            <label class="setting-control" for="textHueSlider"><span><strong>Hue</strong><output id="textHueValue" for="textHueSlider">220°</output></span><input id="textHueSlider" type="range" min="0" max="360" step="1" value="220" /></label>
+            <label class="setting-control" for="textBrightnessSlider"><span><strong>Brightness</strong><output id="textBrightnessValue" for="textBrightnessSlider">97%</output></span><input id="textBrightnessSlider" type="range" min="25" max="100" step="1" value="97" /></label>
+            <label class="setting-control" for="textSaturationSlider"><span><strong>Saturation</strong><output id="textSaturationValue" for="textSaturationSlider">43%</output></span><input id="textSaturationSlider" type="range" min="0" max="100" step="1" value="43" /></label>
+          </div>
+        </section>
+
+        <section class="settings-color-section settings-layout-section" aria-labelledby="layoutTitle">
+          <div class="settings-section-heading"><div><h4 id="layoutTitle">Interface scale</h4></div></div>
+          <div class="settings-controls">
+            <label class="setting-control" for="zoomSlider"><span><strong>Interface zoom</strong><output id="zoomValue" for="zoomSlider">100%</output></span><input id="zoomSlider" type="range" min="75" max="125" step="5" value="100" /></label>
+          </div>
+        </section>
       </div>
 
       <div class="settings-actions">

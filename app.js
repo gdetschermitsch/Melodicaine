@@ -58,7 +58,10 @@
     lyricsPanel: $('lyricsPanel'), lyricsTrackTitle: $('lyricsTrackTitle'), lyricsTrackArtist: $('lyricsTrackArtist'), lyricsCover: $('lyricsCover'), lyricsContent: $('lyricsContent'), toast: $('toast'),
     manageDock: $('manageDock'), manageDockToggle: $('manageDockToggle'), manageItemList: $('manageItemList'),
     manageSelectionCount: $('manageSelectionCount'), selectAllManageButton: $('selectAllManageButton'), deleteSelectedButton: $('deleteSelectedButton'),
-    settingsButton: $('settingsButton'), settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), doneSettingsButton: $('doneSettingsButton'), resetSettingsButton: $('resetSettingsButton'), hueSlider: $('hueSlider'), brightnessSlider: $('brightnessSlider'), saturationSlider: $('saturationSlider'), zoomSlider: $('zoomSlider'), hueValue: $('hueValue'), brightnessValue: $('brightnessValue'), saturationValue: $('saturationValue'), zoomValue: $('zoomValue'),
+    settingsButton: $('settingsButton'), settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), doneSettingsButton: $('doneSettingsButton'), resetSettingsButton: $('resetSettingsButton'),
+    accentHueSlider: $('accentHueSlider'), accentBrightnessSlider: $('accentBrightnessSlider'), accentSaturationSlider: $('accentSaturationSlider'), accentHueValue: $('accentHueValue'), accentBrightnessValue: $('accentBrightnessValue'), accentSaturationValue: $('accentSaturationValue'),
+    graphicsHueSlider: $('graphicsHueSlider'), graphicsBrightnessSlider: $('graphicsBrightnessSlider'), graphicsSaturationSlider: $('graphicsSaturationSlider'), graphicsHueValue: $('graphicsHueValue'), graphicsBrightnessValue: $('graphicsBrightnessValue'), graphicsSaturationValue: $('graphicsSaturationValue'),
+    textHueSlider: $('textHueSlider'), textBrightnessSlider: $('textBrightnessSlider'), textSaturationSlider: $('textSaturationSlider'), textHueValue: $('textHueValue'), textBrightnessValue: $('textBrightnessValue'), textSaturationValue: $('textSaturationValue'), zoomSlider: $('zoomSlider'), zoomValue: $('zoomValue'),
     addMenuDialog: $('addMenuDialog'), closeAddMenuButton: $('closeAddMenuButton'), addMenuTrackName: $('addMenuTrackName'), addMenuQueueButton: $('addMenuQueueButton'), addMenuNewPlaylistButton: $('addMenuNewPlaylistButton'), addMenuPlaylistButton: $('addMenuPlaylistButton'), addMenuPlaylistList: $('addMenuPlaylistList'), addMenuLovedButton: $('addMenuLovedButton'),
     showQueueButton: $('showQueueButton'), mobileMenuButton: $('mobileMenuButton'), drawerScrim: $('drawerScrim'), librarySidebar: $('librarySidebar'), closeDrawerButton: $('closeDrawerButton'), mobileManageButton: $('mobileManageButton'), installButton: $('installButton'), installHelpText: $('installHelpText'), installStateBadge: $('installStateBadge'), iosInstallSteps: $('iosInstallSteps'), persistenceText: $('persistenceText'), requestPersistenceButton: $('requestPersistenceButton'), confirmDialog: $('confirmDialog'), confirmMessage: $('confirmMessage'), confirmYesButton: $('confirmYesButton'), confirmNoButton: $('confirmNoButton')
   };
@@ -133,55 +136,89 @@
     tx.objectStore(SETTINGS_STORE).put({ key, value });
   }
 
-  const DEFAULT_INTERFACE_SETTINGS = Object.freeze({ hue: 151, brightness: 70, saturation: 64, zoom: 100 });
+  const DEFAULT_INTERFACE_SETTINGS = Object.freeze({
+    accent: Object.freeze({ hue: 151, brightness: 70, saturation: 64 }),
+    graphics: Object.freeze({ hue: 151, brightness: 70, saturation: 64 }),
+    text: Object.freeze({ hue: 220, brightness: 97, saturation: 43 }),
+    zoom: 100
+  });
 
   function clampSetting(value, min, max, fallback) {
     const number = Number(value);
     return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
   }
 
+  function normalizeColorSettings(settings, defaults, brightnessMax = 90) {
+    return {
+      hue: clampSetting(settings?.hue, 0, 360, defaults.hue),
+      brightness: clampSetting(settings?.brightness, 25, brightnessMax, defaults.brightness),
+      saturation: clampSetting(settings?.saturation, 0, 100, defaults.saturation)
+    };
+  }
+
+  function setColorControls(prefix, values) {
+    const hueSlider = els[`${prefix}HueSlider`];
+    const brightnessSlider = els[`${prefix}BrightnessSlider`];
+    const saturationSlider = els[`${prefix}SaturationSlider`];
+    const hueValue = els[`${prefix}HueValue`];
+    const brightnessValue = els[`${prefix}BrightnessValue`];
+    const saturationValue = els[`${prefix}SaturationValue`];
+    hueSlider.value = values.hue;
+    brightnessSlider.value = values.brightness;
+    saturationSlider.value = values.saturation;
+    hueValue.value = hueValue.textContent = `${values.hue}°`;
+    brightnessValue.value = brightnessValue.textContent = `${values.brightness}%`;
+    saturationValue.value = saturationValue.textContent = `${values.saturation}%`;
+  }
+
   function applyInterfaceSettings(settings, persist = false) {
+    // Migrate the original flat appearance object without invalidating existing users' saved settings.
+    const legacyAccent = settings?.accent || (settings && 'hue' in settings ? settings : null);
     const values = {
-      hue: clampSetting(settings.hue, 0, 360, DEFAULT_INTERFACE_SETTINGS.hue),
-      brightness: clampSetting(settings.brightness, 25, 90, DEFAULT_INTERFACE_SETTINGS.brightness),
-      saturation: clampSetting(settings.saturation, 0, 100, DEFAULT_INTERFACE_SETTINGS.saturation),
-      zoom: clampSetting(settings.zoom, 75, 125, DEFAULT_INTERFACE_SETTINGS.zoom)
+      accent: normalizeColorSettings(legacyAccent, DEFAULT_INTERFACE_SETTINGS.accent),
+      graphics: normalizeColorSettings(settings?.graphics || legacyAccent, DEFAULT_INTERFACE_SETTINGS.graphics),
+      text: normalizeColorSettings(settings?.text, DEFAULT_INTERFACE_SETTINGS.text, 100),
+      zoom: clampSetting(settings?.zoom, 75, 125, DEFAULT_INTERFACE_SETTINGS.zoom)
     };
 
     const root = document.documentElement;
-    root.style.setProperty('--accent-hue', String(values.hue));
-    root.style.setProperty('--accent-saturation', `${values.saturation}%`);
-    root.style.setProperty('--accent-lightness', `${values.brightness}%`);
+    root.style.setProperty('--accent-hue', String(values.accent.hue));
+    root.style.setProperty('--accent-saturation', `${values.accent.saturation}%`);
+    root.style.setProperty('--accent-lightness', `${values.accent.brightness}%`);
+    root.style.setProperty('--graphics-hue-shift', `${values.graphics.hue - DEFAULT_INTERFACE_SETTINGS.graphics.hue}deg`);
+    root.style.setProperty('--graphics-saturation-scale', String(Math.max(0.15, values.graphics.saturation / DEFAULT_INTERFACE_SETTINGS.graphics.saturation)));
+    root.style.setProperty('--graphics-brightness-scale', String(Math.max(0.35, values.graphics.brightness / DEFAULT_INTERFACE_SETTINGS.graphics.brightness)));
+    root.style.setProperty('--text-hue', String(values.text.hue));
+    root.style.setProperty('--text-saturation', `${values.text.saturation}%`);
+    root.style.setProperty('--text-lightness', `${values.text.brightness}%`);
     root.style.setProperty('--interface-zoom', String(values.zoom / 100));
-    root.style.setProperty('--brand-hue-shift', `${values.hue - DEFAULT_INTERFACE_SETTINGS.hue}deg`);
-    root.style.setProperty('--brand-saturation-scale', String(Math.max(0.15, values.saturation / DEFAULT_INTERFACE_SETTINGS.saturation)));
-    root.style.setProperty('--brand-brightness-scale', String(Math.max(0.35, values.brightness / DEFAULT_INTERFACE_SETTINGS.brightness)));
 
-    els.hueSlider.value = values.hue;
-    els.brightnessSlider.value = values.brightness;
-    els.saturationSlider.value = values.saturation;
+    setColorControls('accent', values.accent);
+    setColorControls('graphics', values.graphics);
+    setColorControls('text', values.text);
     els.zoomSlider.value = values.zoom;
-    els.hueValue.value = `${values.hue}°`;
-    els.hueValue.textContent = `${values.hue}°`;
-    els.brightnessValue.value = `${values.brightness}%`;
-    els.brightnessValue.textContent = `${values.brightness}%`;
-    els.saturationValue.value = `${values.saturation}%`;
-    els.saturationValue.textContent = `${values.saturation}%`;
-    els.zoomValue.value = `${values.zoom}%`;
-    els.zoomValue.textContent = `${values.zoom}%`;
+    els.zoomValue.value = els.zoomValue.textContent = `${values.zoom}%`;
 
-    const accent = `hsl(${values.hue} ${values.saturation}% ${values.brightness}%)`;
+    const accent = `hsl(${values.accent.hue} ${values.accent.saturation}% ${values.accent.brightness}%)`;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', accent);
 
     if (persist && state.db) setSetting('interfaceAppearance', values);
     return values;
   }
 
+  function readColorControls(prefix) {
+    return {
+      hue: els[`${prefix}HueSlider`].value,
+      brightness: els[`${prefix}BrightnessSlider`].value,
+      saturation: els[`${prefix}SaturationSlider`].value
+    };
+  }
+
   function readInterfaceControls() {
     return {
-      hue: els.hueSlider.value,
-      brightness: els.brightnessSlider.value,
-      saturation: els.saturationSlider.value,
+      accent: readColorControls('accent'),
+      graphics: readColorControls('graphics'),
+      text: readColorControls('text'),
       zoom: els.zoomSlider.value
     };
   }
@@ -1408,7 +1445,12 @@
     els.closeSettingsButton.addEventListener('click', closeSettings);
     els.doneSettingsButton.addEventListener('click', closeSettings);
     els.settingsDialog.addEventListener('click', (event) => { if (event.target === els.settingsDialog) closeSettings(); });
-    [els.hueSlider, els.brightnessSlider, els.saturationSlider, els.zoomSlider].forEach((slider) => slider.addEventListener('input', handleSettingInput));
+    [
+      els.accentHueSlider, els.accentBrightnessSlider, els.accentSaturationSlider,
+      els.graphicsHueSlider, els.graphicsBrightnessSlider, els.graphicsSaturationSlider,
+      els.textHueSlider, els.textBrightnessSlider, els.textSaturationSlider,
+      els.zoomSlider
+    ].forEach((slider) => slider.addEventListener('input', handleSettingInput));
     els.resetSettingsButton.addEventListener('click', () => { applyInterfaceSettings(DEFAULT_INTERFACE_SETTINGS, true); showToast('Interface settings restored.'); });
     els.manageDockToggle.addEventListener('click', () => toggleManage());
     document.querySelectorAll('.manage-tab').forEach((button) => button.addEventListener('click', () => {
