@@ -599,7 +599,7 @@ body { zoom: var(--interface-zoom); }
 .queue-actions .icon-button { min-width:2.35rem; min-height:2.35rem; }
 .text-graphic-button { border:0; background:transparent; color:var(--accent); font-size:1.7rem; font-weight:800; min-width:2.6rem; min-height:2.6rem; cursor:pointer; border-radius:50%; }
 .text-graphic-button:hover, .text-graphic-button:focus-visible, .text-graphic-button.active { background:var(--accent-soft); }
-.love-button { font-size:1.45rem; }
+.love-button .ui-control-graphic, .add-menu-trigger .ui-control-graphic { width: 100%; height: 100%; }
 .playlist-card .album-cover { position:relative; }
 .playlist-card .album-cover::after { content:'PLAYLIST'; position:absolute; right:.5rem; bottom:.5rem; background:rgba(0,0,0,.78); color:var(--accent); padding:.2rem .45rem; border-radius:.35rem; font-size:.65rem; font-weight:800; letter-spacing:.08em; }
 @media (max-width: 720px) {
@@ -721,4 +721,21 @@ body { zoom: var(--interface-zoom); }
   .install-steps { scroll-margin: 16px; }
   .settings-install-copy { align-items: center; }
   .install-state-badge { font-size: 10px; }
+}
+
+/* Use the supplied Melodicaine Add/Love artwork in every generated row action. */
+.graphic-row-button {
+  width: 2.35rem;
+  height: 2.35rem;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  padding: .22rem;
+  display: inline-grid;
+  place-items: center;
+  overflow: visible;
+}
+.graphic-row-button .row-ui-graphic { width: 100%; height: 100%; object-fit: contain; }
+.graphic-row-button.active .row-ui-graphic { opacity: 1; }
+@media (max-width: 960px) {
+  .graphic-row-button { width: 2.75rem; height: 2.75rem; min-width: 2.75rem; min-height: 2.75rem; }
 }

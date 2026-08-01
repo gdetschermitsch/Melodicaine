@@ -444,6 +444,26 @@
     const exists = state.playlists.some((playlist) => playlist.id !== ignoreId && playlist.name.toLowerCase() === base.toLowerCase());
     return exists ? null : base;
   }
+  function isTrackLoved(track) {
+    if (!track) return false;
+    return Boolean(getPlaylist(LOVED_PLAYLIST_ID)?.trackIds.includes(track.id));
+  }
+  function toggleTrackLoved(track) {
+    if (!track) return false;
+    const loved = getPlaylist(LOVED_PLAYLIST_ID);
+    if (!loved) return false;
+    const index = loved.trackIds.indexOf(track.id);
+    if (index >= 0) {
+      loved.trackIds.splice(index, 1);
+      savePlaylists(); renderPlaylists(); renderPlaylistDetail(); renderTracks(); syncLoveButton();
+      showToast(`Removed “${track.title}” from LovedPlaylist.`);
+      return false;
+    }
+    addTrackToPlaylist(track, LOVED_PLAYLIST_ID);
+    renderTracks();
+    return true;
+  }
+
   function addTrackToPlaylist(track, playlistId = LOVED_PLAYLIST_ID) {
     if (!track) return false;
     const playlist = getPlaylist(playlistId);
@@ -460,18 +480,8 @@
   }
 
   function toggleCurrentTrackLoved() {
-    const track = state.currentTrack;
-    if (!track) { showToast('Play a song first.'); return; }
-    const loved = getPlaylist(LOVED_PLAYLIST_ID);
-    if (!loved) return;
-    const index = loved.trackIds.indexOf(track.id);
-    if (index >= 0) {
-      loved.trackIds.splice(index, 1);
-      savePlaylists(); renderPlaylists(); renderPlaylistDetail(); syncLoveButton();
-      showToast(`Removed “${track.title}” from LovedPlaylist.`);
-      return;
-    }
-    addTrackToPlaylist(track, LOVED_PLAYLIST_ID);
+    if (!state.currentTrack) { showToast('Play a song first.'); return; }
+    toggleTrackLoved(state.currentTrack);
   }
   function movePlaylistTrack(playlist, from, to) {
     if (!playlist || from === to || from < 0 || to < 0 || from >= playlist.trackIds.length || to >= playlist.trackIds.length) return;
@@ -744,7 +754,8 @@
     els.trackTableBody.innerHTML = '';
     tracks.forEach((track, index) => {
       const row = document.createElement('tr');
-      row.innerHTML = `<td>${index + 1}</td><td></td><td></td><td></td><td>${track.lyricsFile ? '<span class="lyric-badge">VTT</span>' : '—'}</td><td><div class="row-actions"><button class="icon-button playlist-add" title="Add to playlist">♬＋</button><button class="icon-button love-add" title="Add to LovedPlaylist">♥</button><button class="icon-button queue-add" title="Add to queue">＋</button></div></td>`;
+      const loved = isTrackLoved(track);
+      row.innerHTML = `<td>${index + 1}</td><td></td><td></td><td></td><td>${track.lyricsFile ? '<span class="lyric-badge">VTT</span>' : '—'}</td><td><div class="row-actions"><button class="icon-button graphic-row-button playlist-add" title="Add to playlist" aria-label="Add to playlist"><img class="ui-control-graphic row-ui-graphic" src="${UI_GRAPHICS.add}" alt="" aria-hidden="true" /></button><button class="icon-button graphic-row-button love-add${loved ? ' active' : ''}" title="${loved ? 'Remove from LovedPlaylist' : 'Add to LovedPlaylist'}" aria-label="${loved ? 'Remove from LovedPlaylist' : 'Add to LovedPlaylist'}" aria-pressed="${loved}"><img class="ui-control-graphic row-ui-graphic" src="${loved ? UI_GRAPHICS.loveOn : UI_GRAPHICS.loveOff}" alt="" aria-hidden="true" /></button><button class="icon-button graphic-row-button queue-add" title="Add to queue" aria-label="Add to queue"><img class="ui-control-graphic row-ui-graphic" src="${UI_GRAPHICS.add}" alt="" aria-hidden="true" /></button></div></td>`;
       row.children[1].textContent = track.title;
       row.children[2].textContent = track.artist;
       row.children[3].textContent = track.album;
@@ -753,7 +764,7 @@
         if (!event.target.closest('button')) playTrack(track, tracks);
       });
       row.querySelector('.playlist-add').addEventListener('click', (event) => { event.stopPropagation(); choosePlaylistForTrack(track); });
-      row.querySelector('.love-add').addEventListener('click', (event) => { event.stopPropagation(); addTrackToPlaylist(track); });
+      row.querySelector('.love-add').addEventListener('click', (event) => { event.stopPropagation(); toggleTrackLoved(track); });
       row.querySelector('.queue-add').addEventListener('click', (event) => {
         event.stopPropagation();
         addToQueue([track]);
@@ -770,7 +781,7 @@
       item.className = `queue-item${index === state.queueIndex ? ' active' : ''}`;
       item.draggable = true;
       item.dataset.queueIndex = index;
-      item.innerHTML = `<button class="queue-drag" title="Drag to reorder" aria-label="Drag ${track.title} to reorder">☰</button><span>${index + 1}</span><div><strong></strong><p></p></div><div class="queue-actions"><button class="icon-button queue-move-up" title="Move up" aria-label="Move up">↑</button><button class="icon-button queue-move-down" title="Move down" aria-label="Move down">↓</button><button class="icon-button queue-duplicate" title="Add another copy to queue" aria-label="Add another copy to queue">＋</button><button class="icon-button queue-remove" title="Remove from queue" aria-label="Remove from queue">×</button></div>`;
+      item.innerHTML = `<button class="queue-drag" title="Drag to reorder" aria-label="Drag ${track.title} to reorder">☰</button><span>${index + 1}</span><div><strong></strong><p></p></div><div class="queue-actions"><button class="icon-button queue-move-up" title="Move up" aria-label="Move up">↑</button><button class="icon-button queue-move-down" title="Move down" aria-label="Move down">↓</button><button class="icon-button graphic-row-button queue-duplicate" title="Add another copy to queue" aria-label="Add another copy to queue"><img class="ui-control-graphic row-ui-graphic" src="${UI_GRAPHICS.add}" alt="" aria-hidden="true" /></button><button class="icon-button queue-remove" title="Remove from queue" aria-label="Remove from queue">×</button></div>`;
       item.querySelector('strong').textContent = track.title;
       item.querySelector('p').textContent = `${track.artist} · ${track.album}`;
       item.addEventListener('click', (event) => { if (!event.target.closest('button')) playQueueIndex(index); });
@@ -837,7 +848,7 @@
     els.playlistTrackList.innerHTML = '';
     tracks.forEach((track, index) => {
       const row = document.createElement('div'); row.className = 'queue-item playlist-track-item'; row.draggable = true;
-      row.innerHTML = `<button class="queue-drag" title="Drag to reorder">☰</button><span>${index + 1}</span><div><strong></strong><p></p></div><div class="queue-actions"><button class="icon-button move-up" title="Move up">↑</button><button class="icon-button move-down" title="Move down">↓</button><button class="icon-button add-queue" title="Add to queue">＋</button><button class="icon-button remove-playlist" title="Remove from playlist">×</button></div>`;
+      row.innerHTML = `<button class="queue-drag" title="Drag to reorder">☰</button><span>${index + 1}</span><div><strong></strong><p></p></div><div class="queue-actions"><button class="icon-button move-up" title="Move up">↑</button><button class="icon-button move-down" title="Move down">↓</button><button class="icon-button graphic-row-button add-queue" title="Add to queue" aria-label="Add to queue"><img class="ui-control-graphic row-ui-graphic" src="${UI_GRAPHICS.add}" alt="" aria-hidden="true" /></button><button class="icon-button remove-playlist" title="Remove from playlist">×</button></div>`;
       row.querySelector('strong').textContent = track.title; row.querySelector('p').textContent = `${track.artist} · ${track.album}`;
       row.addEventListener('click', (event) => { if (!event.target.closest('button')) playTrack(track, tracks, { type: 'playlist', id: playlist.id }); });
       row.querySelector('.move-up').addEventListener('click', () => movePlaylistTrack(playlist, index, index - 1));
@@ -857,10 +868,15 @@
     if (!els.loveCurrentButton) return;
     const loved = getPlaylist(LOVED_PLAYLIST_ID);
     const active = Boolean(state.currentTrack && loved?.trackIds.includes(state.currentTrack.id));
-    els.loveCurrentButton.classList.toggle('active', active); els.loveCurrentButton.setAttribute('aria-pressed', String(active));
+    els.loveCurrentButton.classList.toggle('active', active);
     const label = active ? 'Remove current song from LovedPlaylist' : 'Add current song to LovedPlaylist';
-    els.loveCurrentButton.title = label;
-    els.loveCurrentButton.setAttribute('aria-label', label);
+    setButtonGraphic(
+      els.loveCurrentButton,
+      active ? UI_GRAPHICS.loveOn : UI_GRAPHICS.loveOff,
+      label,
+      label,
+      active
+    );
   }
 
   function renderCounts() {
@@ -905,7 +921,7 @@
     album.tracks.forEach((track, index) => {
       const row = document.createElement('div');
       row.className = 'album-track';
-      row.innerHTML = `<span>${track.trackNumber || index + 1}</span><div><div class="track-title"></div><div class="track-subtitle"></div></div><span>${track.lyricsFile ? '<span class="lyric-badge">Lyrics</span>' : ''}</span><button class="icon-button" title="Add to queue">＋</button>`;
+      row.innerHTML = `<span>${track.trackNumber || index + 1}</span><div><div class="track-title"></div><div class="track-subtitle"></div></div><span>${track.lyricsFile ? '<span class="lyric-badge">Lyrics</span>' : ''}</span><button class="icon-button graphic-row-button" title="Add to queue" aria-label="Add to queue"><img class="ui-control-graphic row-ui-graphic" src="${UI_GRAPHICS.add}" alt="" aria-hidden="true" /></button>`;
       row.querySelector('.track-title').textContent = track.title;
       row.querySelector('.track-subtitle').textContent = track.artist;
       row.addEventListener('click', (event) => { if (!event.target.closest('button')) playTrack(track, album.tracks, { type: 'album', id: album.id }); });
@@ -1331,7 +1347,10 @@
     repeatOne: './assets/ui/repeat1.png',
     volumeLow: './assets/ui/volumelow.png',
     volumeMedium: './assets/ui/volumemedium.png',
-    volumeLoud: './assets/ui/volumeloud.png'
+    volumeLoud: './assets/ui/volumeloud.png',
+    add: './assets/ui/add.png',
+    loveOff: './assets/ui/loveoff.png',
+    loveOn: './assets/ui/loveon.png'
   });
 
   function setButtonGraphic(button, source, title, ariaLabel, pressed = null) {
