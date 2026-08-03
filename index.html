@@ -23,7 +23,7 @@
         <img class="brand-logo melodicaine-artwork" src="./assets/logo.png" alt="" aria-hidden="true" />
         <div class="brand-copy">
           <img class="brand-title melodicaine-artwork" src="./assets/title.png" alt="MelodicaineStudio" />
-          <p>Your music stays on your device.</p>
+          <p>Your music stays on this device.</p>
         </div>
         <button id="closeDrawerButton" class="drawer-close-button" type="button" aria-label="Close library menu">×</button>
       </div>
@@ -38,6 +38,10 @@
             <input id="folderPicker" type="file" accept=".mp3,.vtt,.jpg,.jpeg,.png,.webp,audio/mpeg,text/vtt,image/jpeg,image/png,image/webp" webkitdirectory directory multiple hidden />
             <label class="secondary-button" for="filePicker">Import individual files</label>
             <input id="filePicker" type="file" accept=".mp3,.vtt,.jpg,.jpeg,.png,.webp,audio/mpeg,text/vtt,image/jpeg,image/png,image/webp" multiple hidden />
+            <button id="quickGuideButton" class="secondary-button quick-guide-button" type="button" aria-haspopup="dialog" aria-controls="quickGuideDialog">
+              <span class="quick-guide-button-icon" aria-hidden="true">?</span>
+              <span>Quick Guide</span>
+            </button>
             <p id="manageMobileHelp" class="manage-mobile-help">On phones where folder selection is unavailable, use “Import individual files.”</p>
           </div>
 
@@ -308,98 +312,176 @@
         <div>
           <p class="eyebrow">Appearance</p>
           <h3 id="settingsTitle">Interface settings</h3>
+          <p class="settings-heading-help">Open only the section you need.</p>
         </div>
         <button id="closeSettingsButton" class="settings-close-button" type="button" aria-label="Close settings">×</button>
       </div>
 
-
-      <section class="settings-install-section" aria-labelledby="installSectionTitle">
-        <div class="settings-install-copy">
-          <div>
-            <p class="eyebrow">Application</p>
-            <h4 id="installSectionTitle">Install MelodicaineStudio</h4>
-          </div>
-          <span id="installStateBadge" class="install-state-badge">Checking…</span>
-        </div>
-        <p id="installHelpText" class="install-help-text">Checking installation support for this device…</p>
-        <button id="installButton" class="primary-button settings-install-button" type="button">Install MelodicaineStudio</button>
-        <div id="iosInstallSteps" class="install-steps hidden" tabindex="-1">
-          <h5>Install on iPhone or iPad</h5>
-          <ol>
-            <li>Open this exact MelodicaineStudio page in <strong>Safari</strong>.</li>
-            <li>Tap Safari’s <strong>Share</strong> button (square with an upward arrow). On some layouts, tap the page menu first, then <strong>Share</strong>.</li>
-            <li>Scroll the action sheet and choose <strong>Add to Home Screen</strong>.</li>
-            <li>Turn on <strong>Open as Web App</strong> when that option is shown, then tap <strong>Add</strong>.</li>
-            <li>Close Safari, launch MelodicaineStudio from its new Home Screen icon, and import music from inside that installed copy.</li>
-          </ol>
-          <div class="ios-storage-warning">
-            <strong>Important iPhone limitation</strong>
-            <p>iOS does not let this web app browse or continuously use a music folder. Folder import is unavailable, and imported audio is copied into Safari-managed website storage. Large permanent libraries require an Android/desktop browser or a native iPhone application.</p>
-          </div>
-        </div>
-      </section>
-
-      <div class="settings-sections">
-        <section class="settings-color-section" aria-labelledby="accentColorTitle">
-          <div class="settings-section-heading">
+      <div class="settings-sections settings-accordions">
+        <details class="settings-accordion" open>
+          <summary>
             <span class="settings-section-number">1</span>
-            <div><h4 id="accentColorTitle">Accent color</h4><p>Buttons, highlights, focus rings, and active states.</p></div>
+            <span class="settings-summary-copy"><strong>Application</strong><small>Installation and device guidance</small></span>
+            <span class="settings-summary-chevron" aria-hidden="true">›</span>
+          </summary>
+          <div class="settings-panel-body">
+            <section class="settings-install-section" aria-labelledby="installSectionTitle">
+              <div class="settings-install-copy">
+                <div>
+                  <p class="eyebrow">Application</p>
+                  <h4 id="installSectionTitle">Install MelodicaineStudio</h4>
+                </div>
+                <span id="installStateBadge" class="install-state-badge">Checking…</span>
+              </div>
+              <p id="installHelpText" class="install-help-text">Checking installation support for this device…</p>
+              <button id="installButton" class="primary-button settings-install-button" type="button">Install MelodicaineStudio</button>
+              <div id="iosInstallSteps" class="install-steps hidden" tabindex="-1">
+                <h5>Install on iPhone or iPad</h5>
+                <ol>
+                  <li>Open this exact MelodicaineStudio page in <strong>Safari</strong>.</li>
+                  <li>Tap Safari’s <strong>Share</strong> button (square with an upward arrow). On some layouts, tap the page menu first, then <strong>Share</strong>.</li>
+                  <li>Scroll the action sheet and choose <strong>Add to Home Screen</strong>.</li>
+                  <li>Turn on <strong>Open as Web App</strong> when that option is shown, then tap <strong>Add</strong>.</li>
+                  <li>Close Safari, launch MelodicaineStudio from its new Home Screen icon, and import music from inside that installed copy.</li>
+                </ol>
+                <div class="ios-storage-warning">
+                  <strong>Important iPhone limitation</strong>
+                  <p>iOS does not let this web app browse or continuously use a music folder. Folder import is unavailable, and imported audio is copied into Safari-managed website storage. Large permanent libraries require an Android/desktop browser or a native iPhone application.</p>
+                </div>
+              </div>
+            </section>
           </div>
-          <div class="settings-preview settings-accent-preview" aria-hidden="true">
-            <span class="settings-preview-dot"></span>
-            <span>Accent preview</span>
-          </div>
-          <div class="settings-controls">
-            <label class="setting-control" for="accentHueSlider"><span><strong>Hue</strong><output id="accentHueValue" for="accentHueSlider">151°</output></span><input id="accentHueSlider" type="range" min="0" max="360" step="1" value="151" /></label>
-            <label class="setting-control" for="accentBrightnessSlider"><span><strong>Brightness</strong><output id="accentBrightnessValue" for="accentBrightnessSlider">70%</output></span><input id="accentBrightnessSlider" type="range" min="25" max="90" step="1" value="70" /></label>
-            <label class="setting-control" for="accentSaturationSlider"><span><strong>Saturation</strong><output id="accentSaturationValue" for="accentSaturationSlider">64%</output></span><input id="accentSaturationSlider" type="range" min="0" max="100" step="1" value="64" /></label>
-          </div>
-        </section>
+        </details>
 
-        <section class="settings-color-section" aria-labelledby="graphicsColorTitle">
-          <div class="settings-section-heading">
+        <details class="settings-accordion">
+          <summary>
             <span class="settings-section-number">2</span>
-            <div><h4 id="graphicsColorTitle">Graphics color</h4><p>MelodicaineStudio artwork and interface control graphics.</p></div>
+            <span class="settings-summary-copy"><strong>Accent color</strong><small>Buttons, highlights, and active states</small></span>
+            <span class="settings-summary-chevron" aria-hidden="true">›</span>
+          </summary>
+          <div class="settings-panel-body">
+            <section class="settings-color-section" aria-labelledby="accentColorTitle">
+              <div class="settings-section-heading"><div><h4 id="accentColorTitle">Accent color</h4><p>Buttons, highlights, focus rings, and active states.</p></div></div>
+              <div class="settings-preview settings-accent-preview" aria-hidden="true"><span class="settings-preview-dot"></span><span>Accent preview</span></div>
+              <div class="settings-controls">
+                <label class="setting-control" for="accentHueSlider"><span><strong>Hue</strong><output id="accentHueValue" for="accentHueSlider">151°</output></span><input id="accentHueSlider" type="range" min="0" max="360" step="1" value="151" /></label>
+                <label class="setting-control" for="accentBrightnessSlider"><span><strong>Brightness</strong><output id="accentBrightnessValue" for="accentBrightnessSlider">70%</output></span><input id="accentBrightnessSlider" type="range" min="25" max="90" step="1" value="70" /></label>
+                <label class="setting-control" for="accentSaturationSlider"><span><strong>Saturation</strong><output id="accentSaturationValue" for="accentSaturationSlider">64%</output></span><input id="accentSaturationSlider" type="range" min="0" max="100" step="1" value="64" /></label>
+              </div>
+            </section>
           </div>
-          <div class="settings-preview settings-graphics-preview" aria-hidden="true">
-            <img class="settings-graphics-preview-icon melodicaine-artwork" src="./icons/icon-192.png" alt="" />
-            <span>Graphics preview</span>
-          </div>
-          <div class="settings-controls">
-            <label class="setting-control" for="graphicsHueSlider"><span><strong>Hue</strong><output id="graphicsHueValue" for="graphicsHueSlider">151°</output></span><input id="graphicsHueSlider" type="range" min="0" max="360" step="1" value="151" /></label>
-            <label class="setting-control" for="graphicsBrightnessSlider"><span><strong>Brightness</strong><output id="graphicsBrightnessValue" for="graphicsBrightnessSlider">70%</output></span><input id="graphicsBrightnessSlider" type="range" min="25" max="90" step="1" value="70" /></label>
-            <label class="setting-control" for="graphicsSaturationSlider"><span><strong>Saturation</strong><output id="graphicsSaturationValue" for="graphicsSaturationSlider">64%</output></span><input id="graphicsSaturationSlider" type="range" min="0" max="100" step="1" value="64" /></label>
-          </div>
-        </section>
+        </details>
 
-        <section class="settings-color-section" aria-labelledby="textColorTitle">
-          <div class="settings-section-heading">
+        <details class="settings-accordion">
+          <summary>
             <span class="settings-section-number">3</span>
-            <div><h4 id="textColorTitle">Text color</h4><p>Primary and secondary interface text.</p></div>
+            <span class="settings-summary-copy"><strong>Graphics color</strong><small>Artwork and interface-control graphics</small></span>
+            <span class="settings-summary-chevron" aria-hidden="true">›</span>
+          </summary>
+          <div class="settings-panel-body">
+            <section class="settings-color-section" aria-labelledby="graphicsColorTitle">
+              <div class="settings-section-heading"><div><h4 id="graphicsColorTitle">Graphics color</h4><p>MelodicaineStudio artwork and interface control graphics.</p></div></div>
+              <div class="settings-preview settings-graphics-preview" aria-hidden="true"><img class="settings-graphics-preview-icon melodicaine-artwork" src="./icons/icon-192.png" alt="" /><span>Graphics preview</span></div>
+              <div class="settings-controls">
+                <label class="setting-control" for="graphicsHueSlider"><span><strong>Hue</strong><output id="graphicsHueValue" for="graphicsHueSlider">151°</output></span><input id="graphicsHueSlider" type="range" min="0" max="360" step="1" value="151" /></label>
+                <label class="setting-control" for="graphicsBrightnessSlider"><span><strong>Brightness</strong><output id="graphicsBrightnessValue" for="graphicsBrightnessSlider">70%</output></span><input id="graphicsBrightnessSlider" type="range" min="25" max="90" step="1" value="70" /></label>
+                <label class="setting-control" for="graphicsSaturationSlider"><span><strong>Saturation</strong><output id="graphicsSaturationValue" for="graphicsSaturationSlider">64%</output></span><input id="graphicsSaturationSlider" type="range" min="0" max="100" step="1" value="64" /></label>
+              </div>
+            </section>
           </div>
-          <div class="settings-preview settings-text-preview" aria-hidden="true">
-            <strong>Primary text preview</strong>
-            <span>Secondary text preview</span>
-          </div>
-          <div class="settings-controls">
-            <label class="setting-control" for="textHueSlider"><span><strong>Hue</strong><output id="textHueValue" for="textHueSlider">220°</output></span><input id="textHueSlider" type="range" min="0" max="360" step="1" value="220" /></label>
-            <label class="setting-control" for="textBrightnessSlider"><span><strong>Brightness</strong><output id="textBrightnessValue" for="textBrightnessSlider">97%</output></span><input id="textBrightnessSlider" type="range" min="25" max="100" step="1" value="97" /></label>
-            <label class="setting-control" for="textSaturationSlider"><span><strong>Saturation</strong><output id="textSaturationValue" for="textSaturationSlider">43%</output></span><input id="textSaturationSlider" type="range" min="0" max="100" step="1" value="43" /></label>
-          </div>
-        </section>
+        </details>
 
-        <section class="settings-color-section settings-layout-section" aria-labelledby="layoutTitle">
-          <div class="settings-section-heading"><div><h4 id="layoutTitle">Interface scale</h4></div></div>
-          <div class="settings-controls">
-            <label class="setting-control" for="zoomSlider"><span><strong>Interface zoom</strong><output id="zoomValue" for="zoomSlider">100%</output></span><input id="zoomSlider" type="range" min="75" max="125" step="5" value="100" /></label>
+        <details class="settings-accordion">
+          <summary>
+            <span class="settings-section-number">4</span>
+            <span class="settings-summary-copy"><strong>Text color</strong><small>Primary and secondary interface text</small></span>
+            <span class="settings-summary-chevron" aria-hidden="true">›</span>
+          </summary>
+          <div class="settings-panel-body">
+            <section class="settings-color-section" aria-labelledby="textColorTitle">
+              <div class="settings-section-heading"><div><h4 id="textColorTitle">Text color</h4><p>Primary and secondary interface text.</p></div></div>
+              <div class="settings-preview settings-text-preview" aria-hidden="true"><strong>Primary text preview</strong><span>Secondary text preview</span></div>
+              <div class="settings-controls">
+                <label class="setting-control" for="textHueSlider"><span><strong>Hue</strong><output id="textHueValue" for="textHueSlider">220°</output></span><input id="textHueSlider" type="range" min="0" max="360" step="1" value="220" /></label>
+                <label class="setting-control" for="textBrightnessSlider"><span><strong>Brightness</strong><output id="textBrightnessValue" for="textBrightnessSlider">97%</output></span><input id="textBrightnessSlider" type="range" min="25" max="100" step="1" value="97" /></label>
+                <label class="setting-control" for="textSaturationSlider"><span><strong>Saturation</strong><output id="textSaturationValue" for="textSaturationSlider">43%</output></span><input id="textSaturationSlider" type="range" min="0" max="100" step="1" value="43" /></label>
+              </div>
+            </section>
           </div>
-        </section>
+        </details>
+
+        <details class="settings-accordion">
+          <summary>
+            <span class="settings-section-number">5</span>
+            <span class="settings-summary-copy"><strong>Interface settings</strong><small>Interface, graphics, text, and complete-view sizing</small></span>
+            <span class="settings-summary-chevron" aria-hidden="true">›</span>
+          </summary>
+          <div class="settings-panel-body">
+            <section class="settings-color-section settings-layout-section" aria-labelledby="layoutTitle">
+              <div class="settings-section-heading"><div><h4 id="layoutTitle">Interface sizing</h4><p>Adjust the interface structure, visual artwork, written content, or the complete studio view independently.</p></div></div>
+              <div class="settings-controls">
+                <label class="setting-control" for="interfaceScaleSlider"><span><strong>Interface scale</strong><output id="interfaceScaleValue" for="interfaceScaleSlider">100%</output></span><input id="interfaceScaleSlider" type="range" min="85" max="115" step="5" value="100" /></label>
+                <label class="setting-control" for="graphicsScaleSlider"><span><strong>Graphics scale</strong><output id="graphicsScaleValue" for="graphicsScaleSlider">100%</output></span><input id="graphicsScaleSlider" type="range" min="75" max="125" step="5" value="100" /></label>
+                <label class="setting-control" for="textScaleSlider"><span><strong>Text scale</strong><output id="textScaleValue" for="textScaleSlider">100%</output></span><input id="textScaleSlider" type="range" min="75" max="125" step="5" value="100" /></label>
+                <label class="setting-control" for="zoomSlider"><span><strong>Interface zoom</strong><output id="zoomValue" for="zoomSlider">100%</output></span><input id="zoomSlider" type="range" min="75" max="125" step="5" value="100" /></label>
+              </div>
+            </section>
+          </div>
+        </details>
       </div>
 
       <div class="settings-actions">
         <button id="resetSettingsButton" class="secondary-button" type="button">Restore defaults</button>
         <button id="doneSettingsButton" class="primary-button" type="button">Done</button>
       </div>
+    </div>
+  </div>
+
+  <div id="quickGuideDialog" class="quick-guide-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="quickGuideTitle" aria-describedby="quickGuideIntro">
+    <div class="quick-guide-card">
+      <div class="quick-guide-heading">
+        <div>
+          <p class="eyebrow">MelodicaineStudio</p>
+          <h3 id="quickGuideTitle">Quick Guide</h3>
+          <p id="quickGuideIntro">Build a private, polished music studio directly inside your browser.</p>
+        </div>
+        <button id="closeQuickGuideButton" class="settings-close-button" type="button" aria-label="Close quick guide">×</button>
+      </div>
+
+      <div class="quick-guide-hero">
+        <img class="quick-guide-logo melodicaine-artwork" src="./icons/icon-192.png" alt="" aria-hidden="true" />
+        <div><strong>Your library stays on this device.</strong><span>Import, organize, play, queue, and follow synchronized lyrics without uploading your music to MelodicaineStudio.</span></div>
+      </div>
+
+      <div class="quick-guide-grid">
+        <section class="quick-guide-section">
+          <div class="quick-guide-section-title"><span>01</span><h4>Quick start</h4></div>
+          <ol class="quick-guide-steps">
+            <li><strong>Import music.</strong><span>Choose album folders for automatic grouping, or import individual MP3, VTT, and artwork files.</span></li>
+            <li><strong>Browse your studio.</strong><span>Open Artists, Albums, or Tracks and use Search to find music instantly.</span></li>
+            <li><strong>Play and organize.</strong><span>Use the player controls, queue songs, create playlists, or add favorites to LovedPlaylist.</span></li>
+            <li><strong>Show lyrics.</strong><span>Matching WebVTT files follow playback automatically and can be opened from the player.</span></li>
+            <li><strong>Protect the library.</strong><span>Use Protect local library in Manage when your browser supports persistent storage.</span></li>
+          </ol>
+        </section>
+
+        <section class="quick-guide-section studio-features-section">
+          <div class="quick-guide-section-title"><span>02</span><h4>Studio features</h4></div>
+          <ul class="studio-feature-list">
+            <li><strong>Private local library</strong><span>Music remains in browser-managed storage on this device.</span></li>
+            <li><strong>Smart album import</strong><span>Reads MP3 metadata, embedded covers, folder artwork, and matching lyrics.</span></li>
+            <li><strong>Artist and album organization</strong><span>Automatically builds clean library views from imported metadata.</span></li>
+            <li><strong>Synchronized lyrics</strong><span>WebVTT lines highlight with the current playback position.</span></li>
+            <li><strong>Playlists and LovedPlaylist</strong><span>Create, rename, reorder, and manage custom song collections.</span></li>
+            <li><strong>Full queue controls</strong><span>Add, duplicate, remove, reorder, shuffle, and repeat tracks.</span></li>
+            <li><strong>Custom studio appearance</strong><span>Adjust colors, interface scale, graphics scale, text scale, and zoom from Settings.</span></li>
+            <li><strong>Installable web app</strong><span>Install supported versions for a focused app-style experience.</span></li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="quick-guide-note"><strong>Best import structure:</strong><span>Keep each album in its own folder with MP3 tracks, optional matching .vtt files, and a cover image named cover, folder, or front.</span></div>
+      <div class="quick-guide-actions"><button id="doneQuickGuideButton" class="primary-button" type="button">Start using the studio</button></div>
     </div>
   </div>
 

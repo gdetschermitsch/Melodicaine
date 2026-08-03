@@ -32,6 +32,7 @@
     deferredInstallPrompt: null,
     settingsReturnFocus: null,
     donationReturnFocus: null,
+    quickGuideReturnFocus: null,
     playlists: [],
     selectedPlaylistId: null,
     playbackContext: { type: 'queue', id: null },
@@ -58,7 +59,7 @@
     syncVolumeGraphic();
   }
   const els = {
-    folderPicker: $('folderPicker'), folderPickerLabel: $('folderPickerLabel'), filePicker: $('filePicker'), manageMobileHelp: $('manageMobileHelp'), searchInput: $('searchInput'), statusText: $('statusText'),
+    folderPicker: $('folderPicker'), folderPickerLabel: $('folderPickerLabel'), filePicker: $('filePicker'), quickGuideButton: $('quickGuideButton'), manageMobileHelp: $('manageMobileHelp'), searchInput: $('searchInput'), statusText: $('statusText'),
     artistGrid: $('artistGrid'), artistEmpty: $('artistEmpty'), albumGrid: $('albumGrid'), albumEmpty: $('albumEmpty'), trackTableBody: $('trackTableBody'), trackEmpty: $('trackEmpty'),
     queueList: $('queueList'), queueEmpty: $('queueEmpty'), artistCount: $('artistCount'), albumCount: $('albumCount'), trackCount: $('trackCount'), playlistCount: $('playlistCount'), queueCount: $('queueCount'),
     playlistGrid: $('playlistGrid'), playlistEmpty: $('playlistEmpty'), createPlaylistForm: $('createPlaylistForm'), playlistNameInput: $('playlistNameInput'), playlistDetail: $('playlistDetail'), closePlaylistButton: $('closePlaylistButton'), playlistDetailTitle: $('playlistDetailTitle'), playlistDetailStats: $('playlistDetailStats'), playlistTrackList: $('playlistTrackList'), playlistDetailEmpty: $('playlistDetailEmpty'), playPlaylistButton: $('playPlaylistButton'), queuePlaylistButton: $('queuePlaylistButton'), renamePlaylistButton: $('renamePlaylistButton'), deletePlaylistButton: $('deletePlaylistButton'),
@@ -74,9 +75,10 @@
     manageSelectionCount: $('manageSelectionCount'), selectAllManageButton: $('selectAllManageButton'), deleteSelectedButton: $('deleteSelectedButton'),
     donationButton: $('donationButton'), donationDialog: $('donationDialog'), closeDonationButton: $('closeDonationButton'), donationOkayButton: $('donationOkayButton'), donationDisclaimerStep: $('donationDisclaimerStep'), donationLinksStep: $('donationLinksStep'), cruxtainWebsiteButton: $('cruxtainWebsiteButton'),
     settingsButton: $('settingsButton'), settingsDialog: $('settingsDialog'), closeSettingsButton: $('closeSettingsButton'), doneSettingsButton: $('doneSettingsButton'), resetSettingsButton: $('resetSettingsButton'),
+    quickGuideDialog: $('quickGuideDialog'), closeQuickGuideButton: $('closeQuickGuideButton'), doneQuickGuideButton: $('doneQuickGuideButton'),
     accentHueSlider: $('accentHueSlider'), accentBrightnessSlider: $('accentBrightnessSlider'), accentSaturationSlider: $('accentSaturationSlider'), accentHueValue: $('accentHueValue'), accentBrightnessValue: $('accentBrightnessValue'), accentSaturationValue: $('accentSaturationValue'),
     graphicsHueSlider: $('graphicsHueSlider'), graphicsBrightnessSlider: $('graphicsBrightnessSlider'), graphicsSaturationSlider: $('graphicsSaturationSlider'), graphicsHueValue: $('graphicsHueValue'), graphicsBrightnessValue: $('graphicsBrightnessValue'), graphicsSaturationValue: $('graphicsSaturationValue'),
-    textHueSlider: $('textHueSlider'), textBrightnessSlider: $('textBrightnessSlider'), textSaturationSlider: $('textSaturationSlider'), textHueValue: $('textHueValue'), textBrightnessValue: $('textBrightnessValue'), textSaturationValue: $('textSaturationValue'), zoomSlider: $('zoomSlider'), zoomValue: $('zoomValue'),
+    textHueSlider: $('textHueSlider'), textBrightnessSlider: $('textBrightnessSlider'), textSaturationSlider: $('textSaturationSlider'), textHueValue: $('textHueValue'), textBrightnessValue: $('textBrightnessValue'), textSaturationValue: $('textSaturationValue'), interfaceScaleSlider: $('interfaceScaleSlider'), interfaceScaleValue: $('interfaceScaleValue'), graphicsScaleSlider: $('graphicsScaleSlider'), graphicsScaleValue: $('graphicsScaleValue'), textScaleSlider: $('textScaleSlider'), textScaleValue: $('textScaleValue'), zoomSlider: $('zoomSlider'), zoomValue: $('zoomValue'),
     addMenuDialog: $('addMenuDialog'), closeAddMenuButton: $('closeAddMenuButton'), addMenuTrackName: $('addMenuTrackName'), addMenuQueueButton: $('addMenuQueueButton'), addMenuNewPlaylistButton: $('addMenuNewPlaylistButton'), addMenuPlaylistButton: $('addMenuPlaylistButton'), addMenuPlaylistList: $('addMenuPlaylistList'), addMenuLovedButton: $('addMenuLovedButton'),
     showQueueButton: $('showQueueButton'), mobileMenuButton: $('mobileMenuButton'), drawerScrim: $('drawerScrim'), librarySidebar: $('librarySidebar'), closeDrawerButton: $('closeDrawerButton'), mobileManageButton: $('mobileManageButton'), installButton: $('installButton'), installHelpText: $('installHelpText'), installStateBadge: $('installStateBadge'), iosInstallSteps: $('iosInstallSteps'), persistenceText: $('persistenceText'), requestPersistenceButton: $('requestPersistenceButton'), confirmDialog: $('confirmDialog'), confirmMessage: $('confirmMessage'), confirmYesButton: $('confirmYesButton'), confirmNoButton: $('confirmNoButton')
   };
@@ -155,7 +157,18 @@
     accent: Object.freeze({ hue: 151, brightness: 70, saturation: 64 }),
     graphics: Object.freeze({ hue: 151, brightness: 70, saturation: 64 }),
     text: Object.freeze({ hue: 220, brightness: 97, saturation: 43 }),
+    scale: 100,
+    graphicsScale: 100,
+    textScale: 100,
     zoom: 100
+  });
+
+  const FIXED_TEXT_PIXEL_SIZES = Object.freeze([9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 21, 22, 24, 25, 26, 27, 28, 30, 31, 34, 36, 42, 46, 48, 50, 52, 80]);
+  const REM_TEXT_SIZES = Object.freeze({
+    'rem-065': 0.65,
+    'rem-086': 0.86,
+    'rem-100': 1,
+    'rem-105': 1.05
   });
 
   function clampSetting(value, min, max, fallback) {
@@ -193,6 +206,9 @@
       accent: normalizeColorSettings(legacyAccent, DEFAULT_INTERFACE_SETTINGS.accent),
       graphics: normalizeColorSettings(settings?.graphics || legacyAccent, DEFAULT_INTERFACE_SETTINGS.graphics),
       text: normalizeColorSettings(settings?.text, DEFAULT_INTERFACE_SETTINGS.text, 100),
+      scale: clampSetting(settings?.scale, 85, 115, DEFAULT_INTERFACE_SETTINGS.scale),
+      graphicsScale: clampSetting(settings?.graphicsScale, 75, 125, DEFAULT_INTERFACE_SETTINGS.graphicsScale),
+      textScale: clampSetting(settings?.textScale, 75, 125, DEFAULT_INTERFACE_SETTINGS.textScale),
       zoom: clampSetting(settings?.zoom, 75, 125, DEFAULT_INTERFACE_SETTINGS.zoom)
     };
 
@@ -206,11 +222,28 @@
     root.style.setProperty('--text-hue', String(values.text.hue));
     root.style.setProperty('--text-saturation', `${values.text.saturation}%`);
     root.style.setProperty('--text-lightness', `${values.text.brightness}%`);
+    root.style.setProperty('--graphics-size-scale', String(values.graphicsScale / 100));
     root.style.setProperty('--interface-zoom', String(values.zoom / 100));
+    root.style.fontSize = `${values.scale}%`;
+
+    const textFactor = values.textScale / 100;
+    FIXED_TEXT_PIXEL_SIZES.forEach((size) => {
+      root.style.setProperty(`--font-size-${size}`, `${Math.round(size * textFactor * 100) / 100}px`);
+    });
+    Object.entries(REM_TEXT_SIZES).forEach(([name, remSize]) => {
+      const pixels = 16 * remSize * (values.scale / 100) * textFactor;
+      root.style.setProperty(`--font-size-${name}`, `${Math.round(pixels * 100) / 100}px`);
+    });
 
     setColorControls('accent', values.accent);
     setColorControls('graphics', values.graphics);
     setColorControls('text', values.text);
+    els.interfaceScaleSlider.value = values.scale;
+    els.interfaceScaleValue.value = els.interfaceScaleValue.textContent = `${values.scale}%`;
+    els.graphicsScaleSlider.value = values.graphicsScale;
+    els.graphicsScaleValue.value = els.graphicsScaleValue.textContent = `${values.graphicsScale}%`;
+    els.textScaleSlider.value = values.textScale;
+    els.textScaleValue.value = els.textScaleValue.textContent = `${values.textScale}%`;
     els.zoomSlider.value = values.zoom;
     els.zoomValue.value = els.zoomValue.textContent = `${values.zoom}%`;
 
@@ -234,6 +267,9 @@
       accent: readColorControls('accent'),
       graphics: readColorControls('graphics'),
       text: readColorControls('text'),
+      scale: els.interfaceScaleSlider.value,
+      graphicsScale: els.graphicsScaleSlider.value,
+      textScale: els.textScaleSlider.value,
       zoom: els.zoomSlider.value
     };
   }
@@ -260,6 +296,22 @@
     const returnFocus = state.donationReturnFocus;
     state.donationReturnFocus = null;
     requestAnimationFrame(() => focusElement(returnFocus || els.donationButton));
+  }
+
+  function openQuickGuide() {
+    state.quickGuideReturnFocus = document.activeElement;
+    els.quickGuideDialog.classList.remove('hidden');
+    document.body.classList.add('quick-guide-open');
+    requestAnimationFrame(() => focusElement(els.closeQuickGuideButton));
+  }
+
+  function closeQuickGuide() {
+    if (els.quickGuideDialog.classList.contains('hidden')) return;
+    els.quickGuideDialog.classList.add('hidden');
+    document.body.classList.remove('quick-guide-open');
+    const returnFocus = state.quickGuideReturnFocus;
+    state.quickGuideReturnFocus = null;
+    requestAnimationFrame(() => focusElement(returnFocus || els.quickGuideButton));
   }
 
   function openSettings() {
@@ -1501,11 +1553,15 @@
     els.closeSettingsButton.addEventListener('click', closeSettings);
     els.doneSettingsButton.addEventListener('click', closeSettings);
     els.settingsDialog.addEventListener('click', (event) => { if (event.target === els.settingsDialog) closeSettings(); });
+    els.quickGuideButton.addEventListener('click', openQuickGuide);
+    els.closeQuickGuideButton.addEventListener('click', closeQuickGuide);
+    els.doneQuickGuideButton.addEventListener('click', closeQuickGuide);
+    els.quickGuideDialog.addEventListener('click', (event) => { if (event.target === els.quickGuideDialog) closeQuickGuide(); });
     [
       els.accentHueSlider, els.accentBrightnessSlider, els.accentSaturationSlider,
       els.graphicsHueSlider, els.graphicsBrightnessSlider, els.graphicsSaturationSlider,
       els.textHueSlider, els.textBrightnessSlider, els.textSaturationSlider,
-      els.zoomSlider
+      els.interfaceScaleSlider, els.graphicsScaleSlider, els.textScaleSlider, els.zoomSlider
     ].forEach((slider) => slider.addEventListener('input', handleSettingInput));
     els.resetSettingsButton.addEventListener('click', () => { applyInterfaceSettings(DEFAULT_INTERFACE_SETTINGS, true); showToast('Interface settings restored.'); });
     els.manageDockToggle.addEventListener('click', () => toggleManage());
@@ -1603,6 +1659,7 @@
     els.lyricsPanel.addEventListener('click', (event) => { if (event.target === els.lyricsPanel) toggleLyrics(false); });
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
+      if (!els.quickGuideDialog.classList.contains('hidden')) { closeQuickGuide(); return; }
       if (!els.addMenuDialog.classList.contains('hidden')) { closeAddMenu(); return; }
       if (!els.donationDialog.classList.contains('hidden')) { closeDonation(); return; }
       if (!els.settingsDialog.classList.contains('hidden')) { closeSettings(); return; }
